@@ -1,6 +1,11 @@
 package prompt
 
-import "github.com/c-bata/go-prompt/internal/debug"
+import (
+	"fmt"
+	"os"
+
+	"github.com/c-bata/go-prompt/internal/debug"
+)
 
 /*
 
@@ -38,83 +43,54 @@ Editing
 
 */
 
-var emacsKeyBindings = []KeyBind{
+var emacsKeyBindings = map[KeyCode]KeyBindFunc{
 	// Go to the End of the line
-	{
-		Key: ControlE,
-		Fn: func(buf *Buffer) {
-			x := []rune(buf.Document().TextAfterCursor())
-			buf.CursorRight(len(x))
-		},
+	ControlE: func(buf *Buffer) {
+		x := []rune(buf.Document().TextAfterCursor())
+		buf.CursorRight(len(x))
 	},
 	// Go to the beginning of the line
-	{
-		Key: ControlA,
-		Fn: func(buf *Buffer) {
-			x := []rune(buf.Document().TextBeforeCursor())
-			buf.CursorLeft(len(x))
-		},
+	ControlA: func(buf *Buffer) {
+		x := []rune(buf.Document().TextBeforeCursor())
+		buf.CursorLeft(len(x))
 	},
 	// Cut the Line after the cursor
-	{
-		Key: ControlK,
-		Fn: func(buf *Buffer) {
-			x := []rune(buf.Document().TextAfterCursor())
-			buf.Delete(len(x))
-		},
+	ControlK: func(buf *Buffer) {
+		x := []rune(buf.Document().TextAfterCursor())
+		buf.Delete(len(x))
 	},
 	// Cut/delete the Line before the cursor
-	{
-		Key: ControlU,
-		Fn: func(buf *Buffer) {
-			x := []rune(buf.Document().TextBeforeCursor())
-			buf.DeleteBeforeCursor(len(x))
-		},
+	ControlU: func(buf *Buffer) {
+		x := []rune(buf.Document().TextBeforeCursor())
+		buf.DeleteBeforeCursor(len(x))
 	},
 	// Delete character under the cursor
-	{
-		Key: ControlD,
-		Fn: func(buf *Buffer) {
-			if buf.Text() != "" {
-				buf.Delete(1)
-			}
-		},
+	ControlD: func(buf *Buffer) {
+		if buf.Text() != "" {
+			buf.Delete(1)
+		}
 	},
 	// Backspace
-	{
-		Key: ControlH,
-		Fn: func(buf *Buffer) {
-			buf.DeleteBeforeCursor(1)
-		},
+	ControlH: func(buf *Buffer) {
+		buf.DeleteBeforeCursor(1)
 	},
 	// Right allow: Forward one character
-	{
-		Key: ControlF,
-		Fn: func(buf *Buffer) {
-			buf.CursorRight(1)
-		},
+	ControlF: func(buf *Buffer) {
+		buf.CursorRight(1)
 	},
 	// Left allow: Backward one character
-	{
-		Key: ControlB,
-		Fn: func(buf *Buffer) {
-			buf.CursorLeft(1)
-		},
+	ControlB: func(buf *Buffer) {
+		buf.CursorLeft(1)
 	},
 	// Cut the Word before the cursor.
-	{
-		Key: ControlW,
-		Fn: func(buf *Buffer) {
-			buf.DeleteBeforeCursor(len([]rune(buf.Document().GetWordBeforeCursorWithSpace())))
-		},
+	ControlW: func(buf *Buffer) {
+		buf.DeleteBeforeCursor(len([]rune(buf.Document().GetWordBeforeCursorWithSpace())))
 	},
 	// Clear the Screen, similar to the clear command
-	{
-		Key: ControlL,
-		Fn: func(buf *Buffer) {
-			consoleWriter.EraseScreen()
-			consoleWriter.CursorGoTo(0, 0)
-			debug.AssertNoError(consoleWriter.Flush())
-		},
+	ControlL: func(buf *Buffer) {
+		consoleWriter.EraseScreen()
+		consoleWriter.CursorGoTo(0, 0)
+		debug.AssertNoError(consoleWriter.Flush())
+	},
 	},
 }

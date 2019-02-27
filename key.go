@@ -3,65 +3,89 @@
 
 package prompt
 
-// Key is the type express the key inserted from user.
-//go:generate stringer -type=Key
-type Key int
+// KeyCode is the type represents a key inserted by the user.
+//go:generate stringer -type=KeyCode
+type KeyCode int32
 
-// ASCIICode is the type contains Key and it's ascii byte array.
-type ASCIICode struct {
-	Key       Key
-	ASCIICode []byte
+type ControlSequence string
+
+// Key is the type contains a logical Key and its control sequence.
+type KeyDefinition struct {
+	Key      KeyCode
+	Sequence ControlSequence
 }
 
 const (
-	Escape Key = iota
+	// Key is not defined
+	NotDefined KeyCode = iota
 
-	ControlA
-	ControlB
-	ControlC
-	ControlD
-	ControlE
-	ControlF
-	ControlG
-	ControlH
-	ControlI
-	ControlJ
-	ControlK
-	ControlL
-	ControlM
-	ControlN
-	ControlO
-	ControlP
-	ControlQ
-	ControlR
-	ControlS
-	ControlT
-	ControlU
-	ControlV
-	ControlW
-	ControlX
-	ControlY
-	ControlZ
+	// Key which is ignored. (The key binding for this key should not do anything.)
+	Ignore
 
-	ControlSpace
-	ControlBackslash
-	ControlSquareClose
-	ControlCircumflex
-	ControlUnderscore
-	ControlLeft
-	ControlRight
-	ControlUp
-	ControlDown
+	// Matches any key.
+	Any
+
+	Escape
+
+	A
+	B
+	C
+	D
+	E
+	F
+	G
+	H
+	I
+	J
+	K
+	L
+	M
+	N
+	O
+	P
+	Q
+	R
+	S
+	T
+	U
+	V
+	W
+	X
+	Y
+	Z
+
+	// must prefix these with 'Key' :(
+	Key1
+	Key2
+	Key3
+	Key4
+	Key5
+	Key6
+	Key7
+	Key8
+	Key9
+	Key0
+
+	Backtick
+	Circumflex
+	Underscore
+	Minus
+	Equals
+	Backspace
+	SquareOpen
+	SquareClose
+	SingleQuote
+	Backslash
+	LessThan
+	Space
+	Comma
+	Point
+	Slash
 
 	Up
 	Down
 	Right
 	Left
-
-	ShiftLeft
-	ShiftUp
-	ShiftDown
-	ShiftRight
 
 	Home
 	End
@@ -72,7 +96,6 @@ const (
 	PageDown
 	BackTab
 	Insert
-	Backspace
 
 	// Aliases.
 	Tab
@@ -111,18 +134,58 @@ const (
 	F23
 	F24
 
-	// Matches any key.
-	Any
-
 	// Special
 	CPRResponse
 	Vt100MouseEvent
 	WindowsMouseEvent
 	BracketedPaste
 
-	// Key which is ignored. (The key binding for this key should not do anything.)
-	Ignore
+	// Key modifiers, must be last (before the back-compat defs)
+	Shift   = 0x10000
+	Control = 0x20000
+	Alt     = 0x40000
 
-	// Key is not defined
-	NotDefined
+	// Constants for backwards compatibility:
+
+	ControlA = Control | A
+	ControlB = Control | B
+	ControlC = Control | C
+	ControlD = Control | D
+	ControlE = Control | E
+	ControlF = Control | F
+	ControlG = Control | G
+	ControlH = Control | H
+	ControlI = Control | I
+	ControlJ = Control | J
+	ControlK = Control | K
+	ControlL = Control | L
+	ControlM = Control | M
+	ControlN = Control | N
+	ControlO = Control | O
+	ControlP = Control | P
+	ControlQ = Control | Q
+	ControlR = Control | R
+	ControlS = Control | S
+	ControlT = Control | T
+	ControlU = Control | U
+	ControlV = Control | V
+	ControlW = Control | W
+	ControlX = Control | X
+	ControlY = Control | Y
+	ControlZ = Control | Z
+
+	ControlSpace       = Control | Space
+	ControlBackslash   = Control | Backslash
+	ControlSquareClose = Control | SquareClose
+	ControlCircumflex  = Control | Circumflex
+	ControlUnderscore  = Control | Underscore
+	ControlLeft        = Control | Left
+	ControlRight       = Control | Right
+	ControlUp          = Control | Up
+	ControlDown        = Control | Down
+
+	ShiftLeft  = Shift | Left
+	ShiftUp    = Shift | Up
+	ShiftDown  = Shift | Down
+	ShiftRight = Shift | Right
 )

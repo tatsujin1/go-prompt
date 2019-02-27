@@ -5,14 +5,14 @@ type KeyBindFunc func(*Buffer)
 
 // KeyBind represents which key should do what operation.
 type KeyBind struct {
-	Key Key
+	Key KeyCode
 	Fn  KeyBindFunc
 }
 
-// ASCIICodeBind represents which []byte should do what operation
-type ASCIICodeBind struct {
-	ASCIICode []byte
-	Fn        KeyBindFunc
+// ControlBind binds a specific control sequence to an operation.
+type ControlSequenceBind struct {
+	Sequence ControlSequence
+	Fn       KeyBindFunc
 }
 
 // KeyBindMode to switch a key binding flexibly.
@@ -25,35 +25,17 @@ const (
 	EmacsKeyBind KeyBindMode = "emacs"
 )
 
-var commonKeyBindings = []KeyBind{
+var commonKeyBindings = map[KeyCode]KeyBindFunc{
 	// Go to the End of the line
-	{
-		Key: End,
-		Fn:  GoLineEnd,
-	},
+	End: GoLineEnd,
 	// Go to the beginning of the line
-	{
-		Key: Home,
-		Fn:  GoLineBeginning,
-	},
-	// Delete character under the cursor
-	{
-		Key: Delete,
-		Fn:  DeleteChar,
-	},
-	// Backspace
-	{
-		Key: Backspace,
-		Fn:  DeleteBeforeChar,
-	},
-	// Right allow: Forward one character
-	{
-		Key: Right,
-		Fn:  GoRightChar,
-	},
-	// Left allow: Backward one character
-	{
-		Key: Left,
-		Fn:  GoLeftChar,
-	},
+	Home: GoLineBeginning,
+	// Delete character under/at the cursor
+	Delete: DeleteChar,
+	// Backspace: delete character before the cursor
+	Backspace: DeleteBeforeChar,
+	// Right arrow: Forward one character
+	Right: GoRightChar,
+	// Left arrow: Backward one character
+	Left: GoLeftChar,
 }

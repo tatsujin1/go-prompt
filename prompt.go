@@ -1,7 +1,7 @@
 package prompt
 
 import (
-	"bytes"
+	"fmt"
 	"os"
 	"time"
 
@@ -50,7 +50,7 @@ func (p *Prompt) Run() {
 
 	p.renderer.Render(p.buf, p.completion)
 
-	bufCh := make(chan []byte, 128)
+	bufCh := make(chan ControlSequence, 128)
 	stopReadBufCh := make(chan struct{})
 	go p.readBuffer(bufCh, stopReadBufCh)
 
@@ -61,8 +61,8 @@ func (p *Prompt) Run() {
 
 	for {
 		select {
-		case b := <-bufCh:
-			if shouldExit, e := p.feed(b); shouldExit {
+		case cs := <-bufCh:
+			if shouldExit, e := p.feed(cs); shouldExit {
 				p.renderer.BreakLine(p.buf)
 				stopReadBufCh <- struct{}{}
 				stopHandleSignalCh <- struct{}{}
@@ -104,8 +104,9 @@ func (p *Prompt) Run() {
 	}
 }
 
-func (p *Prompt) feed(b []byte) (shouldExit bool, exec *Exec) {
-	key := GetKey(b)
+func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
+	key := GetKey(cs)
+
 
 	// completion
 	completing := p.completion.Completing()
@@ -143,17 +144,17 @@ func (p *Prompt) feed(b []byte) (shouldExit bool, exec *Exec) {
 			return
 		}
 	case NotDefined:
-		if p.handleASCIICodeBinding(b) {
+		if p.handleControlSequenceBinding(cs) {
 			return
 		}
-		p.buf.InsertText(string(b), false, true)
+		p.buf.InsertText(string(cs), false, true)
 	}
 
 	p.handleKeyBinding(key)
 	return
 }
 
-func (p *Prompt) handleCompletionKeyBinding(key Key, completing bool) {
+func (p *Prompt) handleCompletionKeyBinding(key KeyCode, completing bool) {
 	switch key {
 	case Down:
 		if completing {
@@ -179,41 +180,29 @@ func (p *Prompt) handleCompletionKeyBinding(key Key, completing bool) {
 	}
 }
 
-func (p *Prompt) handleKeyBinding(key Key) {
-	for i := range commonKeyBindings {
-		kb := commonKeyBindings[i]
-		if kb.Key == key {
-			kb.Fn(p.buf)
-		}
+func (p *Prompt) handleKeyBinding(key KeyCode) {
+	if fn, ok := commonKeyBindings[key]; ok {
+		fn(p.buf)
 	}
 
 	if p.keyBindMode == EmacsKeyBind {
-		for i := range emacsKeyBindings {
-			kb := emacsKeyBindings[i]
-			if kb.Key == key {
-				kb.Fn(p.buf)
-			}
+		if fn, ok := emacsKeyBindings[key]; ok {
+			fn(p.buf)
 		}
 	}
 
 	// Custom key bindings
-	for i := range p.keyBindings {
-		kb := p.keyBindings[i]
-		if kb.Key == key {
-			kb.Fn(p.buf)
-		}
+	if fn, ok := p.keyBindings[key]; ok {
+		fn(p.buf)
 	}
 }
 
-func (p *Prompt) handleASCIICodeBinding(b []byte) bool {
-	checked := false
-	for _, kb := range p.ASCIICodeBindings {
-		if bytes.Compare(kb.ASCIICode, b) == 0 {
-			kb.Fn(p.buf)
-			checked = true
-		}
+func (p *Prompt) handleControlSequenceBinding(cs ControlSequence) bool {
+	fn, ok := p.ControlSequenceBindings[cs]
+	if ok {
+		fn(p.buf)
 	}
-	return checked
+	return ok
 }
 
 // Input just returns user input text.
@@ -232,7 +221,7 @@ func (p *Prompt) Input() string {
 	}
 
 	p.renderer.Render(p.buf, p.completion)
-	bufCh := make(chan []byte, 128)
+	bufCh := make(chan ControlSequence, 128)
 	stopReadBufCh := make(chan struct{})
 	go p.readBuffer(bufCh, stopReadBufCh)
 
@@ -257,7 +246,7 @@ func (p *Prompt) Input() string {
 	}
 }
 
-func (p *Prompt) readBuffer(bufCh chan []byte, stopCh chan struct{}) {
+func (p *Prompt) readBuffer(bufCh chan ControlSequence, stopCh chan struct{}) {
 	debug.Log("start reading buffer")
 	for {
 		select {
@@ -266,7 +255,7 @@ func (p *Prompt) readBuffer(bufCh chan []byte, stopCh chan struct{}) {
 			return
 		default:
 			if b, err := p.in.Read(); err == nil && !(len(b) == 1 && b[0] == 0) {
-				bufCh <- b
+				bufCh <- ControlSequence(b)
 			}
 		}
 		time.Sleep(10 * time.Millisecond)

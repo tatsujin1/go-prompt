@@ -221,15 +221,19 @@ var SwitchKeyBindMode = OptionSwitchKeyBindMode
 // OptionAddKeyBind to set a custom key bind.
 func OptionAddKeyBind(b ...KeyBind) Option {
 	return func(p *Prompt) error {
-		p.keyBindings = append(p.keyBindings, b...)
+		for _, bind := range b {
+			p.keyBindings[bind.Key] = bind.Fn
+		}
 		return nil
 	}
 }
 
-// OptionAddASCIICodeBind to set a custom key bind.
-func OptionAddASCIICodeBind(b ...ASCIICodeBind) Option {
+// OptionAddControlSequenceBind to set a custom key bind.
+func OptionAddControlSequenceBind(b ...ControlSequenceBind) Option {
 	return func(p *Prompt) error {
-		p.ASCIICodeBindings = append(p.ASCIICodeBindings, b...)
+		for _, bind := range b {
+			p.ControlSequenceBindings[bind.Sequence] = bind.Fn
+		}
 		return nil
 	}
 }

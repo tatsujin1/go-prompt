@@ -22,7 +22,7 @@ func main() {
 		prompt.OptionHistory([]string{"SELECT * FROM users;"}),
 		prompt.OptionPrefixTextColor(prompt.Yellow),
 		prompt.OptionPreviewSuggestionTextColor(prompt.Blue),
-		prompt.OptionSelectedSuggestionBGColor(prompt.LightGray),
-		prompt.OptionSuggestionBGColor(prompt.DarkGray))
+		prompt.OptionSelectedSuggestionBGColor(prompt.White),
+		prompt.OptionSuggestionBGColor(prompt.BrightBlack))
 	fmt.Println("Your input: " + in)
 }

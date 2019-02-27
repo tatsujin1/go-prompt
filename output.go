@@ -50,40 +50,24 @@ const (
 
 	// Low intensity
 
-	// Black represents a black.
+	// Standard colors
 	Black
-	// DarkRed represents a dark red.
-	DarkRed
-	// DarkGreen represents a dark green.
-	DarkGreen
-	// Brown represents a brown.
-	Brown
-	// DarkBlue represents a dark blue.
-	DarkBlue
-	// Purple represents a purple.
-	Purple
-	// Cyan represents a cyan.
-	Cyan
-	// LightGray represents a light gray.
-	LightGray
-
-	// High intensity
-
-	// DarkGray represents a dark gray.
-	DarkGray
-	// Red represents a red.
 	Red
-	// Green represents a green.
 	Green
-	// Yellow represents a yellow.
 	Yellow
-	// Blue represents a blue.
 	Blue
-	// Fuchsia represents a fuchsia.
-	Fuchsia
-	// Turquoise represents a turquoise.
-	Turquoise
-	// White represents a white.
+	Magenta
+	Cyan
+	Gray
+
+	// Bright colors
+	BrightBlack
+	BrightRed
+	BrightGreen
+	BrightYellow
+	BrightBlue
+	BrightMagenta
+	BrightCyan
 	White
 )
 

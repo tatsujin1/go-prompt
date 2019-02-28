@@ -23,8 +23,8 @@ type Prompt struct {
 	history           *History
 	completion        *CompletionManager
 	keyBindings       []KeyBind
-	ASCIICodeBindings []ASCIICodeBind
 	keyBindMode       KeyBindMode
+	ControlSequenceBindings map[ControlSequence]KeyBindFunc
 }
 
 // Exec is the struct contains user input context.

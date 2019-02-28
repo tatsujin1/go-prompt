@@ -25,7 +25,6 @@ type Prompt struct {
 	keyBindings       []KeyBind
 	ASCIICodeBindings []ASCIICodeBind
 	keyBindMode       KeyBindMode
-	prefixCallback          func(p *Prompt) string
 }
 
 // Exec is the struct contains user input context.
@@ -39,10 +38,6 @@ func (p *Prompt) Run() {
 	debug.Log("start prompt")
 	p.setUp()
 	defer p.tearDown()
-
-	if p.prefixCallback != nil {
-		p.renderer.prefix = p.prefixCallback(p)
-	}
 
 	if p.completion.showAtStart {
 		p.completion.Update(*p.buf.Document())
@@ -97,9 +92,6 @@ func (p *Prompt) Run() {
 			os.Exit(code)
 		default:
 			time.Sleep(10 * time.Millisecond)
-		}
-		if p.prefixCallback != nil {
-			p.renderer.prefix = p.prefixCallback(p)
 		}
 	}
 }
@@ -211,10 +203,6 @@ func (p *Prompt) Input() string {
 	debug.Log("start prompt")
 	p.setUp()
 	defer p.tearDown()
-
-	if p.prefixCallback != nil {
-		p.renderer.prefix = p.prefixCallback(p)
-	}
 
 	if p.completion.showAtStart {
 		p.completion.Update(*p.buf.Document())

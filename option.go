@@ -37,14 +37,6 @@ func OptionPrefix(x string) Option {
 	}
 }
 
-// OptionPrefixFunc to set prefix string by callback (before each prompt).
-func OptionPrefixFunc(f func(p *Prompt) string) Option {
-	return func(p *Prompt) error {
-		p.prefixCallback = f
-		return nil
-	}
-}
-
 // OptionCompletionWordSeparator to set word separators. Enable only ' ' if empty.
 func OptionCompletionWordSeparator(x string) Option {
 	return func(p *Prompt) error {

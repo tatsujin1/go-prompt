@@ -23,7 +23,7 @@ func GetKey(cs ControlSequence) KeyCode {
 	if key, ok := KeySequences[cs]; ok {
 		return key
 	}
-	return NotDefined
+	return Undefined
 }
 
 // KeySequences holds mappings of control sequence to a logical key code.
@@ -43,7 +43,7 @@ var KeySequences = map[ControlSequence]KeyCode{
 	//"\x0a": Control | J,
 	"\x0b": Control | K,
 	"\x0c": Control | L,
-	"\x0d": Control | M,
+	"\x0d": Enter, // Control | M
 	"\x0e": Control | N,
 	"\x0f": Control | O,
 	"\x10": Control | P,

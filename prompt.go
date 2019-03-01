@@ -2,6 +2,7 @@ package prompt
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -16,15 +17,15 @@ type Completer func(Document) []Suggest
 
 // Prompt is core struct of go-prompt.
 type Prompt struct {
-	in                ConsoleParser
-	buf               *Buffer
-	renderer          *Render
-	executor          Executor
-	history           *History
-	completion        *CompletionManager
-	keyBindings       []KeyBind
-	keyBindMode       KeyBindMode
+	in                      ConsoleParser
+	buf                     *Buffer
+	renderer                *Render
+	executor                Executor
+	history                 *History
+	completion              *CompletionManager
+	keyBindings             map[KeyCode]KeyBindFunc
 	ControlSequenceBindings map[ControlSequence]KeyBindFunc
+	editMode                EditMode
 }
 
 // Exec is the struct contains user input context.
@@ -33,11 +34,10 @@ type Exec struct {
 }
 
 // Run starts prompt.
-func (p *Prompt) Run() {
+func (p *Prompt) Run() (exitCode int) {
 	defer debug.Teardown()
 	debug.Log("start prompt")
 	p.setUp()
-	defer p.tearDown()
 
 	if p.completion.showAtStart {
 		p.completion.Update(*p.buf.Document())
@@ -46,13 +46,19 @@ func (p *Prompt) Run() {
 	p.renderer.Render(p.buf, p.completion)
 
 	bufCh := make(chan ControlSequence, 128)
-	stopReadBufCh := make(chan struct{})
+	stopReadBufCh := make(chan struct{}, 1) // buffered so the deferred tear down doesn't block
 	go p.readBuffer(bufCh, stopReadBufCh)
 
 	exitCh := make(chan int)
 	winSizeCh := make(chan *WinSize)
-	stopHandleSignalCh := make(chan struct{})
+	stopHandleSignalCh := make(chan struct{}, 1) // buffered so the deferred tear down doesn't block
 	go p.handleSignals(exitCh, winSizeCh, stopHandleSignalCh)
+
+	defer func() {
+		stopReadBufCh <- struct{}{}
+		stopHandleSignalCh <- struct{}{}
+		p.tearDown()
+	}()
 
 	for {
 		select {
@@ -89,20 +95,40 @@ func (p *Prompt) Run() {
 		case code := <-exitCh:
 			p.renderer.BreakLine(p.buf)
 			p.tearDown()
-			os.Exit(code)
+			return code
 		default:
 			time.Sleep(10 * time.Millisecond)
 		}
 	}
+
+	return 0
 }
 
 func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 	key := GetKey(cs)
 
+	fmt.Fprintf(os.Stderr, "got key: %v\n", []byte(cs))
+
+	p.buf.flags.translated_key = Undefined
 
 	// completion
 	completing := p.completion.Completing()
 	p.handleCompletionKeyBinding(key, completing)
+
+	if bind_res, ok := p.handleKeyBinding(key); ok && bind_res != nil {
+		p.presentError(bind_res)
+	}
+
+	if p.buf.flags.eof {
+		shouldExit = true
+		return
+	}
+	if p.buf.flags.translated_key != Undefined {
+		if p.buf.flags.translated_key == Ignore {
+			return
+		}
+		key = p.buf.flags.translated_key
+	}
 
 	switch key {
 	case Enter, ControlJ, ControlM:
@@ -119,46 +145,60 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 		p.history.Clear()
 	case Up, ControlP:
 		if !completing { // Don't use p.completion.Completing() because it takes double operation when switch to selected=-1.
-			if newBuf, changed := p.history.Older(p.buf); changed {
+			// if current edit is multi-line (and we're not on the first line), go up one line
+			if p.buf.Document().CursorPositionRow() > 0 {
+				fmt.Fprintln(os.Stderr, "line up")
+				p.buf.CursorUp(1)
+			} else if newBuf, changed := p.history.Older(p.buf); changed {
 				p.buf = newBuf
 			}
 		}
 	case Down, ControlN:
 		if !completing { // Don't use p.completion.Completing() because it takes double operation when switch to selected=-1.
-			if newBuf, changed := p.history.Newer(p.buf); changed {
+			// if current edit is multi-line (and we're not on the last line), go down one line
+			if p.buf.Document().CursorPositionRow()+1 < p.buf.Document().LineCount() {
+				fmt.Fprintln(os.Stderr, "line down")
+				p.buf.CursorDown(1)
+			} else if newBuf, changed := p.history.Newer(p.buf); changed {
 				p.buf = newBuf
 			}
 			return
 		}
-	case ControlD:
-		if p.buf.Text() == "" {
-			shouldExit = true
-			return
-		}
-	case NotDefined:
-		if p.handleControlSequenceBinding(cs) {
-			return
+	case Undefined:
+		if bind_res, ok := p.handleControlSequenceBinding(cs); ok && bind_res != nil {
+			if bind_res == io.EOF {
+				shouldExit = true
+				return
+			}
+			p.presentError(bind_res)
 		}
 		p.buf.InsertText(string(cs), false, true)
 	}
 
-	p.handleKeyBinding(key)
+	if p.buf.flags.eof {
+		shouldExit = true
+	}
+
 	return
+}
+
+func (p *Prompt) presentError(err error) {
+	fmt.Fprintf(os.Stderr, "\x1b[31mError:\x1b[m [%T] %s\n", err, err)
 }
 
 func (p *Prompt) handleCompletionKeyBinding(key KeyCode, completing bool) {
 	switch key {
 	case Down:
-		if completing {
+		if completing { // only if already completing
 			p.completion.Next()
 		}
-	case Tab, ControlI:
+	case Tab, ControlI: // next suggestion, or start completing
 		p.completion.Next()
 	case Up:
-		if completing {
+		if completing { // only if already completing
 			p.completion.Previous()
 		}
-	case BackTab:
+	case BackTab: // previous suggestion, or start completing
 		p.completion.Previous()
 	default:
 		if s, ok := p.completion.GetSelectedSuggestion(); ok {
@@ -172,29 +212,35 @@ func (p *Prompt) handleCompletionKeyBinding(key KeyCode, completing bool) {
 	}
 }
 
-func (p *Prompt) handleKeyBinding(key KeyCode) {
-	if fn, ok := commonKeyBindings[key]; ok {
-		fn(p.buf)
+func (p *Prompt) handleKeyBinding(key KeyCode) (KeyBindResult, bool) {
+	// Custom key bindings
+	if fn, ok := p.keyBindings[key]; ok {
+		fmt.Fprintf(os.Stderr, "executing custom key bind\n")
+		return fn(p.buf), true
 	}
 
-	if p.keyBindMode == EmacsKeyBind {
+	// "generic" key bindings
+	if fn, ok := commonKeyBindings[key]; ok {
+		fmt.Fprintf(os.Stderr, "executing common key bind\n")
+		return fn(p.buf), true
+	}
+
+	// mode-specific key bindings
+	if p.editMode == EmacsMode {
 		if fn, ok := emacsKeyBindings[key]; ok {
-			fn(p.buf)
+			fmt.Fprintf(os.Stderr, "executing emacs key bind\n")
+			return fn(p.buf), true
 		}
 	}
 
-	// Custom key bindings
-	if fn, ok := p.keyBindings[key]; ok {
-		fn(p.buf)
-	}
+	return nil, false
 }
 
-func (p *Prompt) handleControlSequenceBinding(cs ControlSequence) bool {
-	fn, ok := p.ControlSequenceBindings[cs]
-	if ok {
-		fn(p.buf)
+func (p *Prompt) handleControlSequenceBinding(cs ControlSequence) (KeyBindResult, bool) {
+	if fn, ok := p.ControlSequenceBindings[cs]; ok {
+		return fn(p.buf), true
 	}
-	return ok
+	return nil, false
 }
 
 // Input just returns user input text.
@@ -202,7 +248,6 @@ func (p *Prompt) Input() string {
 	defer debug.Teardown()
 	debug.Log("start prompt")
 	p.setUp()
-	defer p.tearDown()
 
 	if p.completion.showAtStart {
 		p.completion.Update(*p.buf.Document())
@@ -213,16 +258,19 @@ func (p *Prompt) Input() string {
 	stopReadBufCh := make(chan struct{})
 	go p.readBuffer(bufCh, stopReadBufCh)
 
+	defer func() {
+		stopReadBufCh <- struct{}{}
+		p.tearDown()
+	}()
+
 	for {
 		select {
 		case b := <-bufCh:
 			if shouldExit, e := p.feed(b); shouldExit {
 				p.renderer.BreakLine(p.buf)
-				stopReadBufCh <- struct{}{}
 				return ""
 			} else if e != nil {
 				// Stop goroutine to run readBuffer function
-				stopReadBufCh <- struct{}{}
 				return e.input
 			} else {
 				p.completion.Update(*p.buf.Document())

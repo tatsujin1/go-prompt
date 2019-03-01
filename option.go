@@ -56,7 +56,7 @@ func OptionLivePrefix(f func() (prefix string, useLivePrefix bool)) Option {
 // OptionPrefixTextColor change a text color of prefix string
 func OptionPrefixTextColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.prefixTextColor = x
+		p.renderer.Colors.prefixText = x
 		return nil
 	}
 }
@@ -64,7 +64,7 @@ func OptionPrefixTextColor(x Color) Option {
 // OptionPrefixBackgroundColor to change a background color of prefix string
 func OptionPrefixBackgroundColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.prefixBGColor = x
+		p.renderer.Colors.prefixBG = x
 		return nil
 	}
 }
@@ -72,7 +72,7 @@ func OptionPrefixBackgroundColor(x Color) Option {
 // OptionInputTextColor to change a color of text which is input by user
 func OptionInputTextColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.inputTextColor = x
+		p.renderer.Colors.inputText = x
 		return nil
 	}
 }
@@ -80,7 +80,7 @@ func OptionInputTextColor(x Color) Option {
 // OptionInputBGColor to change a color of background which is input by user
 func OptionInputBGColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.inputBGColor = x
+		p.renderer.Colors.inputBG = x
 		return nil
 	}
 }
@@ -88,7 +88,7 @@ func OptionInputBGColor(x Color) Option {
 // OptionPreviewSuggestionTextColor to change a text color which is completed
 func OptionPreviewSuggestionTextColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.previewSuggestionTextColor = x
+		p.renderer.Colors.previewSuggestionText = x
 		return nil
 	}
 }
@@ -96,7 +96,7 @@ func OptionPreviewSuggestionTextColor(x Color) Option {
 // OptionPreviewSuggestionBGColor to change a background color which is completed
 func OptionPreviewSuggestionBGColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.previewSuggestionBGColor = x
+		p.renderer.Colors.previewSuggestionBG = x
 		return nil
 	}
 }
@@ -104,7 +104,7 @@ func OptionPreviewSuggestionBGColor(x Color) Option {
 // OptionSuggestionTextColor to change a text color in drop down suggestions.
 func OptionSuggestionTextColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.suggestionTextColor = x
+		p.renderer.Colors.suggestionText = x
 		return nil
 	}
 }
@@ -112,7 +112,7 @@ func OptionSuggestionTextColor(x Color) Option {
 // OptionSuggestionBGColor change a background color in drop down suggestions.
 func OptionSuggestionBGColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.suggestionBGColor = x
+		p.renderer.Colors.suggestionBG = x
 		return nil
 	}
 }
@@ -120,7 +120,7 @@ func OptionSuggestionBGColor(x Color) Option {
 // OptionSelectedSuggestionTextColor to change a text color for completed text which is selected inside suggestions drop down box.
 func OptionSelectedSuggestionTextColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.selectedSuggestionTextColor = x
+		p.renderer.Colors.selectedSuggestionText = x
 		return nil
 	}
 }
@@ -128,7 +128,7 @@ func OptionSelectedSuggestionTextColor(x Color) Option {
 // OptionSelectedSuggestionBGColor to change a background color for completed text which is selected inside suggestions drop down box.
 func OptionSelectedSuggestionBGColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.selectedSuggestionBGColor = x
+		p.renderer.Colors.selectedSuggestionBG = x
 		return nil
 	}
 }
@@ -136,7 +136,7 @@ func OptionSelectedSuggestionBGColor(x Color) Option {
 // OptionDescriptionTextColor to change a background color of description text in drop down suggestions.
 func OptionDescriptionTextColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.descriptionTextColor = x
+		p.renderer.Colors.descriptionText = x
 		return nil
 	}
 }
@@ -144,7 +144,7 @@ func OptionDescriptionTextColor(x Color) Option {
 // OptionDescriptionBGColor to change a background color of description text in drop down suggestions.
 func OptionDescriptionBGColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.descriptionBGColor = x
+		p.renderer.Colors.descriptionBG = x
 		return nil
 	}
 }
@@ -152,7 +152,7 @@ func OptionDescriptionBGColor(x Color) Option {
 // OptionSelectedDescriptionTextColor to change a text color of description which is selected inside suggestions drop down box.
 func OptionSelectedDescriptionTextColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.selectedDescriptionTextColor = x
+		p.renderer.Colors.selectedDescriptionText = x
 		return nil
 	}
 }
@@ -160,7 +160,7 @@ func OptionSelectedDescriptionTextColor(x Color) Option {
 // OptionSelectedDescriptionBGColor to change a background color of description which is selected inside suggestions drop down box.
 func OptionSelectedDescriptionBGColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.selectedDescriptionBGColor = x
+		p.renderer.Colors.selectedDescriptionBG = x
 		return nil
 	}
 }
@@ -168,7 +168,7 @@ func OptionSelectedDescriptionBGColor(x Color) Option {
 // OptionScrollbarThumbColor to change a thumb color on scrollbar.
 func OptionScrollbarThumbColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.scrollbarThumbColor = x
+		p.renderer.Colors.scrollbarThumb = x
 		return nil
 	}
 }
@@ -176,7 +176,7 @@ func OptionScrollbarThumbColor(x Color) Option {
 // OptionScrollbarBGColor to change a background color of scrollbar.
 func OptionScrollbarBGColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.scrollbarBGColor = x
+		p.renderer.Colors.scrollbarBG = x
 		return nil
 	}
 }
@@ -198,20 +198,16 @@ func OptionHistory(x []string) Option {
 	}
 }
 
-// OptionSwitchKeyBindMode set a key bind mode.
-func OptionSwitchKeyBindMode(m KeyBindMode) Option {
+// OptionEditMode set a key bind mode.
+func OptionEditMode(m EditMode) Option {
 	return func(p *Prompt) error {
-		p.keyBindMode = m
+		p.editMode = m
 		return nil
 	}
 }
 
-// SwitchKeyBindMode to set a key bind mode.
-// Deprecated: Please use OptionSwitchKeyBindMode.
-var SwitchKeyBindMode = OptionSwitchKeyBindMode
-
-// OptionAddKeyBind to set a custom key bind.
-func OptionAddKeyBind(b ...KeyBind) Option {
+// OptionBindKey to bind keys to functions
+func OptionBindKey(b ...KeyBind) Option {
 	return func(p *Prompt) error {
 		for _, bind := range b {
 			p.keyBindings[bind.Key] = bind.Fn
@@ -220,8 +216,8 @@ func OptionAddKeyBind(b ...KeyBind) Option {
 	}
 }
 
-// OptionAddControlSequenceBind to set a custom key bind.
-func OptionAddControlSequenceBind(b ...ControlSequenceBind) Option {
+// OptionBindControlSequence to make a binding to a specific control sequence.
+func OptionBindControlSequence(b ...ControlSequenceBind) Option {
 	return func(p *Prompt) error {
 		for _, bind := range b {
 			p.ControlSequenceBindings[bind.Sequence] = bind.Fn
@@ -243,34 +239,32 @@ func New(executor Executor, completer Completer, opts ...Option) *Prompt {
 	defaultWriter := NewStdoutWriter()
 	registerConsoleWriter(defaultWriter)
 
+	renderer := NewRender("> ", defaultWriter)
+
+	renderer.Colors = RenderColors{
+		prefixText:              Blue,
+		previewSuggestionText:   Green,
+		suggestionText:          White,
+		suggestionBG:            Cyan,
+		selectedSuggestionText:  Black,
+		selectedSuggestionBG:    Cyan,
+		descriptionText:         Black,
+		descriptionBG:           Cyan,
+		selectedDescriptionText: White,
+		selectedDescriptionBG:   Cyan,
+		scrollbarThumb:          Gray,
+		scrollbarBG:             Cyan,
+	}
+
 	pt := &Prompt{
-		in: NewStandardInputParser(),
-		renderer: &Render{
-			prefix:                       "> ",
-			out:                          defaultWriter,
-			livePrefixCallback:           func() (string, bool) { return "", false },
-			prefixTextColor:              Blue,
-			prefixBGColor:                DefaultColor,
-			inputTextColor:               DefaultColor,
-			inputBGColor:                 DefaultColor,
-			previewSuggestionTextColor:   Green,
-			previewSuggestionBGColor:     DefaultColor,
-			suggestionTextColor:          White,
-			suggestionBGColor:            Cyan,
-			selectedSuggestionTextColor:  Black,
-			selectedSuggestionBGColor:    Cyan,
-			descriptionTextColor:         Black,
-			descriptionBGColor:           Cyan,
-			selectedDescriptionTextColor: White,
-			selectedDescriptionBGColor:   Cyan,
-			scrollbarThumbColor:          Gray,
-			scrollbarBGColor:             Cyan,
-		},
+		in:          NewStandardInputParser(),
+		renderer:    renderer,
 		buf:         NewBuffer(),
 		executor:    executor,
 		history:     NewHistory(),
 		completion:  NewCompletionManager(completer, 6),
-		keyBindMode: EmacsKeyBind, // All the above assume that bash is running in the default Emacs setting
+		editMode:    EmacsMode, // All the above assume that bash is running in the default Emacs setting
+		keyBindings: make(map[KeyCode]KeyBindFunc, 10),
 	}
 
 	for _, opt := range opts {

@@ -1,7 +1,9 @@
 package prompt
 
+type KeyBindResult error
+
 // KeyBindFunc receives buffer and processed it.
-type KeyBindFunc func(*Buffer)
+type KeyBindFunc func(*Buffer) KeyBindResult
 
 // KeyBind represents which key should do what operation.
 type KeyBind struct {
@@ -16,26 +18,27 @@ type ControlSequenceBind struct {
 }
 
 // KeyBindMode to switch a key binding flexibly.
-type KeyBindMode string
+type EditMode string
 
 const (
-	// CommonKeyBind is a mode without any keyboard shortcut
-	CommonKeyBind KeyBindMode = "common"
-	// EmacsKeyBind is a mode to use emacs-like keyboard shortcut
-	EmacsKeyBind KeyBindMode = "emacs"
+	// SimpleMode is a mode without any keyboard shortcuts
+	SimpleMode EditMode = "common"
+	// EmacsKeyBind is a mode to use emacs-like keyboard shortcuts
+	EmacsMode EditMode = "emacs"
+	// TODO: vi?
 )
 
 var commonKeyBindings = map[KeyCode]KeyBindFunc{
 	// Go to the End of the line
-	End: GoLineEnd,
+	End: func(b *Buffer) KeyBindResult { GoLineEnd(b); return nil },
 	// Go to the beginning of the line
-	Home: GoLineBeginning,
+	Home: func(b *Buffer) KeyBindResult { GoLineBeginning(b); return nil },
 	// Delete character under/at the cursor
-	Delete: DeleteChar,
+	Delete: func(b *Buffer) KeyBindResult { DeleteChar(b); return nil },
 	// Backspace: delete character before the cursor
-	Backspace: DeleteBeforeChar,
+	Backspace: func(b *Buffer) KeyBindResult { DeleteBeforeChar(b); return nil },
 	// Right arrow: Forward one character
-	Right: GoRightChar,
+	Right: func(b *Buffer) KeyBindResult { GoRightChar(b); return nil },
 	// Left arrow: Backward one character
-	Left: GoLeftChar,
+	Left: func(b *Buffer) KeyBindResult { GoLeftChar(b); return nil },
 }

@@ -1,6 +1,8 @@
 package prompt
 
 import (
+	"fmt"
+	"os"
 	"runtime"
 
 	"github.com/c-bata/go-prompt/internal/debug"
@@ -13,28 +15,44 @@ type Render struct {
 	prefix             string
 	livePrefixCallback func() (prefix string, useLivePrefix bool)
 	title              string
-	row                uint16
-	col                uint16
+	term_height        uint16
+	term_width         uint16
 
-	previousCursor int
+	previousCursor    int
+	previousLineCount int
 
 	// colors,
-	prefixTextColor              Color
-	prefixBGColor                Color
-	inputTextColor               Color
-	inputBGColor                 Color
-	previewSuggestionTextColor   Color
-	previewSuggestionBGColor     Color
-	suggestionTextColor          Color
-	suggestionBGColor            Color
-	selectedSuggestionTextColor  Color
-	selectedSuggestionBGColor    Color
-	descriptionTextColor         Color
-	descriptionBGColor           Color
-	selectedDescriptionTextColor Color
-	selectedDescriptionBGColor   Color
-	scrollbarThumbColor          Color
-	scrollbarBGColor             Color
+	Colors RenderColors
+}
+
+type RenderColors struct {
+	prefixText              Color
+	prefixBG                Color
+	inputText               Color
+	inputBG                 Color
+	previewSuggestionText   Color
+	previewSuggestionBG     Color
+	suggestionText          Color
+	suggestionBG            Color
+	selectedSuggestionText  Color
+	selectedSuggestionBG    Color
+	descriptionText         Color
+	descriptionBG           Color
+	selectedDescriptionText Color
+	selectedDescriptionBG   Color
+	scrollbarThumb          Color
+	scrollbarBG             Color
+}
+
+func NewRender(prefix string, w ConsoleWriter) *Render {
+	return &Render{
+		prefix: prefix,
+		out:    w,
+
+		previousLineCount: 1,
+
+		livePrefixCallback: func() (string, bool) { return "", false },
+	}
 }
 
 // Setup to initialize console output.
@@ -55,7 +73,7 @@ func (r *Render) getCurrentPrefix() string {
 }
 
 func (r *Render) renderPrefix() {
-	r.out.SetColor(r.prefixTextColor, r.prefixBGColor, false)
+	r.out.SetColor(r.Colors.prefixText, r.Colors.prefixBG, false)
 	r.out.WriteStr(r.getCurrentPrefix())
 	r.out.SetColor(DefaultColor, DefaultColor, false)
 }
@@ -79,8 +97,8 @@ func (r *Render) prepareArea(lines int) {
 
 // UpdateWinSize called when window size is changed.
 func (r *Render) UpdateWinSize(ws *WinSize) {
-	r.row = ws.Row
-	r.col = ws.Col
+	r.term_height = ws.Row
+	r.term_width = ws.Col
 	return
 }
 
@@ -100,7 +118,7 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 	prefix := r.getCurrentPrefix()
 	formatted, width := formatSuggestions(
 		suggestions,
-		int(r.col)-runewidth.StringWidth(prefix)-1, // -1 means a width of scrollbar
+		int(r.term_width)-runewidth.StringWidth(prefix)-1, // -1 means a width of scrollbar
 	)
 	// +1 means a width of scrollbar.
 	width++
@@ -114,8 +132,8 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 
 	cursor := runewidth.StringWidth(prefix) + runewidth.StringWidth(buf.Document().TextBeforeCursor())
 	x, _ := r.toPos(cursor)
-	if x+width >= int(r.col) {
-		cursor = r.backward(cursor, x+width-int(r.col))
+	if x+width >= int(r.term_width) {
+		cursor = r.backward(cursor, x+width-int(r.term_width))
 	}
 
 	contentHeight := len(completions.tmp)
@@ -135,23 +153,23 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 	for i := 0; i < windowHeight; i++ {
 		r.out.CursorDown(1)
 		if i == selected {
-			r.out.SetColor(r.selectedSuggestionTextColor, r.selectedSuggestionBGColor, true)
+			r.out.SetColor(r.Colors.selectedSuggestionText, r.Colors.selectedSuggestionBG, true)
 		} else {
-			r.out.SetColor(r.suggestionTextColor, r.suggestionBGColor, false)
+			r.out.SetColor(r.Colors.suggestionText, r.Colors.suggestionBG, false)
 		}
 		r.out.WriteStr(formatted[i].Text)
 
 		if i == selected {
-			r.out.SetColor(r.selectedDescriptionTextColor, r.selectedDescriptionBGColor, false)
+			r.out.SetColor(r.Colors.selectedDescriptionText, r.Colors.selectedDescriptionBG, false)
 		} else {
-			r.out.SetColor(r.descriptionTextColor, r.descriptionBGColor, false)
+			r.out.SetColor(r.Colors.descriptionText, r.Colors.descriptionBG, false)
 		}
 		r.out.WriteStr(formatted[i].Description)
 
 		if isScrollThumb(i) {
-			r.out.SetColor(DefaultColor, r.scrollbarThumbColor, false)
+			r.out.SetColor(DefaultColor, r.Colors.scrollbarThumb, false)
 		} else {
-			r.out.SetColor(DefaultColor, r.scrollbarBGColor, false)
+			r.out.SetColor(DefaultColor, r.Colors.scrollbarBG, false)
 		}
 		r.out.WriteStr(" ")
 		r.out.SetColor(DefaultColor, DefaultColor, false)
@@ -160,8 +178,8 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 		r.backward(cursor+width, width)
 	}
 
-	if x+width >= int(r.col) {
-		r.out.CursorForward(x + width - int(r.col))
+	if x+width >= int(r.term_width) {
+		r.out.CursorForward(x + width - int(r.term_width))
 	}
 
 	r.out.CursorUp(windowHeight)
@@ -173,11 +191,31 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 	// In situations where a pseudo tty is allocated (e.g. within a docker container),
 	// window size via TIOCGWINSZ is not immediately available and will result in 0,0 dimensions.
-	if r.col == 0 {
+	if r.term_width == 0 {
 		return
 	}
+
+	doc := buffer.Document()
+
+	// TODO: this should render into an off-screen 'buffer'.
+	//   this buffer would then be compared with the buffer rendered previously
+	//   and generate actual output instructions from that.
+
 	defer func() { debug.AssertNoError(r.out.Flush()) }()
+	//fmt.Fprintln(os.Stderr, "------------------------- RENDER")
+	// if more lines have been added to the edit, add space
+	fmt.Fprintf(os.Stderr, "line count: %d -> %d\n", r.previousLineCount, doc.LineCount())
+	if doc.LineCount() > r.previousLineCount {
+		for idx := r.previousLineCount; idx < doc.LineCount(); idx++ {
+			fmt.Fprintln(os.Stderr, "added LF")
+			fmt.Println()
+		}
+	}
+	// move to beginning of the current line (might be wrapped)
 	r.move(r.previousCursor, 0)
+	// we also need to move up the from the current line index
+	// TODO: however, NOT if we just added a new line (then one less up)
+	r.out.CursorUp(buffer.Document().CursorPositionRow())
 
 	line := buffer.Text()
 	prefix := r.getCurrentPrefix()
@@ -187,7 +225,7 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 	_, y := r.toPos(cursor)
 
 	h := y + 1 + int(completion.max)
-	if h > int(r.row) || completionMargin > int(r.col) {
+	if h > int(r.term_height) || completionMargin > int(r.term_width) {
 		r.renderWindowTooSmall()
 		return
 	}
@@ -197,7 +235,7 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 	defer r.out.ShowCursor()
 
 	r.renderPrefix()
-	r.out.SetColor(r.inputTextColor, r.inputBGColor, false)
+	r.out.SetColor(r.Colors.inputText, r.Colors.inputBG, false)
 	r.out.WriteStr(line)
 	r.out.SetColor(DefaultColor, DefaultColor, false)
 	r.lineWrap(cursor)
@@ -210,7 +248,7 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 	if suggest, ok := completion.GetSelectedSuggestion(); ok {
 		cursor = r.backward(cursor, runewidth.StringWidth(buffer.Document().GetWordBeforeCursorUntilSeparator(completion.wordSeparator)))
 
-		r.out.SetColor(r.previewSuggestionTextColor, r.previewSuggestionBGColor, false)
+		r.out.SetColor(r.Colors.previewSuggestionText, r.Colors.previewSuggestionBG, false)
 		r.out.WriteStr(suggest.Text)
 		r.out.SetColor(DefaultColor, DefaultColor, false)
 		cursor += runewidth.StringWidth(suggest.Text)
@@ -223,6 +261,7 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 		cursor = r.backward(cursor, runewidth.StringWidth(rest))
 	}
 	r.previousCursor = cursor
+	r.previousLineCount = doc.LineCount()
 }
 
 // BreakLine to break line.
@@ -231,12 +270,13 @@ func (r *Render) BreakLine(buffer *Buffer) {
 	cursor := runewidth.StringWidth(buffer.Document().TextBeforeCursor()) + runewidth.StringWidth(r.getCurrentPrefix())
 	r.clear(cursor)
 	r.renderPrefix()
-	r.out.SetColor(r.inputTextColor, r.inputBGColor, false)
+	r.out.SetColor(r.Colors.inputText, r.Colors.inputBG, false)
 	r.out.WriteStr(buffer.Document().Text + "\n")
 	r.out.SetColor(DefaultColor, DefaultColor, false)
 	debug.AssertNoError(r.out.Flush())
 
 	r.previousCursor = 0
+	r.previousLineCount = 1
 }
 
 // clear erases the screen from a beginning of input
@@ -257,6 +297,7 @@ func (r *Render) backward(from, n int) int {
 func (r *Render) move(from, to int) int {
 	fromX, fromY := r.toPos(from)
 	toX, toY := r.toPos(to)
+	//fmt.Fprintf(os.Stderr, "move: %d,%d -> %d,%d\n", fromX, fromY, toX, toY)
 
 	r.out.CursorUp(fromY - toY)
 	r.out.CursorBackward(fromX - toX)
@@ -265,12 +306,12 @@ func (r *Render) move(from, to int) int {
 
 // toPos returns the relative position from the beginning of the string.
 func (r *Render) toPos(cursor int) (x, y int) {
-	col := int(r.col)
+	col := int(r.term_width)
 	return cursor % col, cursor / col
 }
 
 func (r *Render) lineWrap(cursor int) {
-	if runtime.GOOS != "windows" && cursor > 0 && cursor%int(r.col) == 0 {
+	if runtime.GOOS != "windows" && cursor > 0 && cursor%int(r.term_width) == 0 {
 		r.out.WriteRaw([]byte{'\n'})
 	}
 }

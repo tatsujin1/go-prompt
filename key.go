@@ -17,7 +17,7 @@ type KeyDefinition struct {
 
 const (
 	// Key is not defined
-	NotDefined KeyCode = iota
+	Undefined KeyCode = iota
 
 	// Key which is ignored. (The key binding for this key should not do anything.)
 	Ignore

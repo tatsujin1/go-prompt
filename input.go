@@ -38,7 +38,7 @@ var KeySequences = map[ControlSequence]KeyCode{
 	"\x05": Control | E,
 	"\x06": Control | F,
 	"\x07": Control | G,
-	"\x08": Control | H,
+	"\x08": Control | H, // Backspace
 	//"\x09": Control | I,
 	//"\x0a": Control | J,
 	"\x0b": Control | K,
@@ -62,7 +62,7 @@ var KeySequences = map[ControlSequence]KeyCode{
 	"\x1d": Control | SquareClose,
 	"\x1e": Control | Circumflex,
 	"\x1f": Control | Underscore,
-	"\x7f": Backspace,
+	"\x7f": Control | Backspace,
 
 	"\x1b[A": Up,
 	"\x1b[B": Down,
@@ -190,6 +190,7 @@ var KeySequences = map[ControlSequence]KeyCode{
 	"\x1by": Alt | Y,
 	"\x1bz": Alt | Z,
 
-	"\x1b\x08": Alt | Backspace,
-	"\x1b\x13": Alt | Enter,
+	"\x1b\x08":  Alt | Backspace,
+	"\x1b\x13":  Alt | Enter,
+	"\x1b[3;3~": Alt | Delete,
 }

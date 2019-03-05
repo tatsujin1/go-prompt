@@ -7,18 +7,18 @@ import (
 func TestPosixParserGetKey(t *testing.T) {
 	scenarioTable := []struct {
 		name     string
-		input    []byte
-		expected Key
+		input    ControlSequence
+		expected KeyCode
 	}{
 		{
 			name:     "escape",
-			input:    []byte{0x1b},
+			input:    "\x1b",
 			expected: Escape,
 		},
 		{
 			name:     "undefined",
-			input:    []byte{'a'},
-			expected: NotDefined,
+			input:    "a",
+			expected: Undefined,
 		},
 	}
 

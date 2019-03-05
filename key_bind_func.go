@@ -54,12 +54,18 @@ func backward_char(buf *Buffer) {
 
 // forward_word Forward one word
 func forward_word(buf *Buffer) {
+	// TODO: if cursor is at the end of the line (and there is a following line),
+	//   move cursor to the beginning of the following line and call again
 	buf.CursorRight(buf.Document().FindEndOfCurrentWordWithSpace())
 }
 
 // backward_word Backward one word
 func backward_word(buf *Buffer) {
-	buf.CursorLeft(len([]rune(buf.Document().TextBeforeCursor())) - buf.Document().FindStartOfPreviousWordWithSpace())
+	// TODO: if cursor is at the beginning of the line (and there is a preceeding line),
+	//   move cursor to the end of the preceeding line and call again
+	doc := buf.Document()
+	wstart := doc.FindStartOfPreviousWordWithSpace()
+	buf.CursorLeft(len([]rune(doc.TextBeforeCursor())) - wstart)
 }
 
 // delete and copy word at cursor

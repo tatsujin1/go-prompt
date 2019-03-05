@@ -15,10 +15,10 @@ type Render struct {
 	prefix             string
 	livePrefixCallback func() (prefix string, useLivePrefix bool)
 	title              string
-	term_height        uint16
-	term_width         uint16
+	termHeight         uint16
+	termWidth          uint16
 
-	previousCursor    int
+	previousCursor    Coord
 	previousLineCount int
 
 	// colors,
@@ -97,8 +97,8 @@ func (r *Render) prepareArea(lines int) {
 
 // UpdateWinSize called when window size is changed.
 func (r *Render) UpdateWinSize(ws *WinSize) {
-	r.term_height = ws.Row
-	r.term_width = ws.Col
+	r.termHeight = ws.Row
+	r.termWidth = ws.Col
 	return
 }
 
@@ -118,7 +118,7 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 	prefix := r.getCurrentPrefix()
 	formatted, width := formatSuggestions(
 		suggestions,
-		int(r.term_width)-runewidth.StringWidth(prefix)-1, // -1 means a width of scrollbar
+		int(r.termWidth)-runewidth.StringWidth(prefix)-1, // -1 means a width of scrollbar
 	)
 	// +1 means a width of scrollbar.
 	width++
@@ -132,8 +132,8 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 
 	cursor := runewidth.StringWidth(prefix) + runewidth.StringWidth(buf.Document().TextBeforeCursor())
 	x, _ := r.toPos(cursor)
-	if x+width >= int(r.term_width) {
-		cursor = r.backward(cursor, x+width-int(r.term_width))
+	if x+width >= int(r.termWidth) {
+		cursor = r.backward(cursor, x+width-int(r.termWidth))
 	}
 
 	contentHeight := len(completions.tmp)
@@ -178,8 +178,8 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 		r.backward(cursor+width, width)
 	}
 
-	if x+width >= int(r.term_width) {
-		r.out.CursorForward(x + width - int(r.term_width))
+	if x+width >= int(r.termWidth) {
+		r.out.CursorForward(x + width - int(r.termWidth))
 	}
 
 	r.out.CursorUp(windowHeight)
@@ -187,11 +187,17 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 	return
 }
 
+func dbg(m string, args ...interface{}) {
+	fmt.Fprint(os.Stderr, "\x1b[33;1m")
+	fmt.Fprintf(os.Stderr, m, args...)
+	fmt.Fprintln(os.Stderr, "\x1b[m")
+}
+
 // Render renders to the console.
 func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 	// In situations where a pseudo tty is allocated (e.g. within a docker container),
 	// window size via TIOCGWINSZ is not immediately available and will result in 0,0 dimensions.
-	if r.term_width == 0 {
+	if r.termWidth == 0 {
 		return
 	}
 
@@ -203,30 +209,33 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 
 	defer func() { debug.AssertNoError(r.out.Flush()) }()
 	//fmt.Fprintln(os.Stderr, "------------------------- RENDER")
-	// if more lines have been added to the edit, add space
-	fmt.Fprintf(os.Stderr, "line count: %d -> %d\n", r.previousLineCount, doc.LineCount())
-	if doc.LineCount() > r.previousLineCount {
-		for idx := r.previousLineCount; idx < doc.LineCount(); idx++ {
-			fmt.Fprintln(os.Stderr, "added LF")
-			fmt.Println()
-		}
+
+	// if lines have been added to the edit, add space
+	lcount := doc.LineCount()
+	added := 0
+	if lcount > r.previousLineCount {
+		r.out.WriteRaw([]byte{'\n'})
+		added = 1
+		dbg("added LF  (%d -> %d)", r.previousLineCount, doc.LineCount())
 	}
-	// move to beginning of the current line (might be wrapped)
-	r.move(r.previousCursor, 0)
-	// we also need to move up the from the current line index
-	// TODO: however, NOT if we just added a new line (then one less up)
-	r.out.CursorUp(buffer.Document().CursorPositionRow())
+	// move to beginning of the current prompt
+
+	r.promptHome(Coord{r.previousCursor.X, r.previousCursor.Y + added})
 
 	line := buffer.Text()
 	prefix := r.getCurrentPrefix()
-	cursor := runewidth.StringWidth(prefix) + runewidth.StringWidth(line)
+	// calculate future cursor position after prefix & line is printed
+	editPoint := doc.DisplayCursorCoordWithPrefix(int(r.termWidth), prefix)
+	dbg("editPoint @ %+v", editPoint)
 
 	// prepare area
-	_, y := r.toPos(cursor)
+	y := lcount
+	//_, y := r.toPos(cursor)
 
 	h := y + 1 + int(completion.max)
-	if h > int(r.term_height) || completionMargin > int(r.term_width) {
+	if h > int(r.termHeight) || completionMargin > int(r.termWidth) {
 		r.renderWindowTooSmall()
+		// TODO: do some better fallback  (this will just spam-loop)
 		return
 	}
 
@@ -234,34 +243,55 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 	r.out.HideCursor()
 	defer r.out.ShowCursor()
 
+	r.out.SaveCursor()
+
+	// render the complete prompt; prefix and editor content
 	r.renderPrefix()
 	r.out.SetColor(r.Colors.inputText, r.Colors.inputBG, false)
 	r.out.WriteStr(line)
 	r.out.SetColor(DefaultColor, DefaultColor, false)
-	r.lineWrap(cursor)
-
+	//r.lineWrap(cursor)
 	r.out.EraseDown()
 
-	cursor = r.backward(cursor, runewidth.StringWidth(line)-buffer.DisplayCursorPosition())
+	// position the cursor at the edit point after the editor rendering
+	r.out.RestoreCursor()
+	r.moveRel(Coord{0, 0}, editPoint)
+	//cursor = r.backward(cursor, runewidth.StringWidth(line)-buffer.DisplayCursorPosition())
 
 	r.renderCompletion(buffer, completion)
-	if suggest, ok := completion.GetSelectedSuggestion(); ok {
-		cursor = r.backward(cursor, runewidth.StringWidth(buffer.Document().GetWordBeforeCursorUntilSeparator(completion.wordSeparator)))
 
+	// if a completion suggestion is currently selected update the screen -- but NOT the editor content!
+	if suggest, ok := completion.GetSelectedSuggestion(); ok {
+		// move to the beginning of the word being completed
+		completing_word := doc.GetWordBeforeCursorUntilSeparator(completion.wordSeparator)
+		editPoint = r.moveRel(editPoint, Coord{-runewidth.StringWidth(completing_word), 0})
+		//cursor := r.backward(cursor, runewidth.StringWidth(buffer.Document().GetWordBeforeCursorUntilSeparator(completion.wordSeparator)))
+
+		// write the suggestion, using the configured preview style
 		r.out.SetColor(r.Colors.previewSuggestionText, r.Colors.previewSuggestionBG, false)
 		r.out.WriteStr(suggest.Text)
-		r.out.SetColor(DefaultColor, DefaultColor, false)
-		cursor += runewidth.StringWidth(suggest.Text)
+		//cursor += runewidth.StringWidth(suggest.Text)
+		// move edit point to the end of the suggested word
+		editPoint.X += runewidth.StringWidth(suggest.Text)
+		r.out.SaveCursor()
 
+		// write the text following the cursor (using default style)
+		r.out.SetColor(DefaultColor, DefaultColor, false)
 		rest := buffer.Document().TextAfterCursor()
 		r.out.WriteStr(rest)
-		cursor += runewidth.StringWidth(rest)
-		r.lineWrap(cursor)
-
-		cursor = r.backward(cursor, runewidth.StringWidth(rest))
+		// total length of line
+		eol := editPoint.X + runewidth.StringWidth(rest)
+		// move cursor back to the edit point
+		//r.backward(cursor, runewidth.StringWidth(rest))
+		if r.lineWrap(eol) { // output LF if necessary
+			r.out.RestoreCursor()
+			r.out.CursorUp(1)
+		} else {
+			r.out.RestoreCursor()
+		}
 	}
-	r.previousCursor = cursor
-	r.previousLineCount = doc.LineCount()
+	r.previousCursor = editPoint
+	r.previousLineCount = lcount
 }
 
 // BreakLine to break line.
@@ -275,7 +305,7 @@ func (r *Render) BreakLine(buffer *Buffer) {
 	r.out.SetColor(DefaultColor, DefaultColor, false)
 	debug.AssertNoError(r.out.Flush())
 
-	r.previousCursor = 0
+	r.previousCursor = Coord{}
 	r.previousLineCount = 1
 }
 
@@ -297,23 +327,52 @@ func (r *Render) backward(from, n int) int {
 func (r *Render) move(from, to int) int {
 	fromX, fromY := r.toPos(from)
 	toX, toY := r.toPos(to)
-	//fmt.Fprintf(os.Stderr, "move: %d,%d -> %d,%d\n", fromX, fromY, toX, toY)
+
+	dbg("move: left: %d  up: %d", fromX-toX, fromY-toY)
 
 	r.out.CursorUp(fromY - toY)
 	r.out.CursorBackward(fromX - toX)
 	return to
 }
 
+// moveRel moves the cursor 'from' coord in the 'rel' direction (right & down).
+//   if 'rel' values are negative it moves in the oppositve direction
+// returns 'from' + 'rel'
+func (r *Render) moveRel(from, rel Coord) Coord {
+	dbg("moveCoord: %+v + %+v", from, rel)
+	r.out.CursorDown(rel.Y)
+	r.out.CursorForward(rel.X)
+	return coord_add(from, rel)
+}
+
+func (r *Render) promptHome(from Coord) {
+	dbg("promptHome: %+v", from)
+	r.out.CursorUp(from.Y)
+	r.out.CursorBackward(from.X)
+}
+
+// coord_add returns a + b
+func coord_add(a, b Coord) Coord {
+	return Coord{a.X + b.X, a.Y + b.Y}
+}
+
+// coord_sub returns a - b
+func coord_sub(a, b Coord) Coord {
+	return Coord{a.X - b.X, a.Y - b.Y}
+}
+
 // toPos returns the relative position from the beginning of the string.
 func (r *Render) toPos(cursor int) (x, y int) {
-	col := int(r.term_width)
+	col := int(r.termWidth)
 	return cursor % col, cursor / col
 }
 
-func (r *Render) lineWrap(cursor int) {
-	if runtime.GOOS != "windows" && cursor > 0 && cursor%int(r.term_width) == 0 {
+func (r *Render) lineWrap(cursor int) bool {
+	if runtime.GOOS != "windows" && cursor > 0 && cursor%int(r.termWidth) == 0 {
 		r.out.WriteRaw([]byte{'\n'})
+		return true
 	}
+	return false
 }
 
 func clamp(high, low, x float64) float64 {

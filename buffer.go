@@ -65,6 +65,11 @@ func (b *Buffer) DisplayCursorPosition() int {
 	return b.Document().DisplayCursorPosition()
 }
 
+// DisplayCursorCoord returns similar to DisplayCursorPosition but separate col & row.
+func (b *Buffer) DisplayCursorCoord(termWidth int) Coord {
+	return b.Document().DisplayCursorCoord(termWidth)
+}
+
 // InsertText insert string from current line.
 func (b *Buffer) InsertText(v string, overwrite bool, moveCursor bool) {
 	or := []rune(b.Text())

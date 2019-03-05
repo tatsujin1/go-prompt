@@ -1,15 +1,30 @@
 package prompt
 
+var clipboard string
+
 // end_of_line Go to the End of the line
 func end_of_line(buf *Buffer) {
-	x := []rune(buf.Document().TextAfterCursor())
-	buf.CursorRight(len(x))
+	doc := buf.Document()
+
+	rest_len := len([]rune(doc.CurrentLineAfterCursor()))
+	if rest_len > 0 {
+		buf.CursorRight(rest_len)
+	} else if len(doc.TextAfterCursor()) > 0 {
+		buf.cursorPosition++
+		end_of_line(buf)
+	}
 }
 
 // beginning_of_line Go to the beginning of the line
 func beginning_of_line(buf *Buffer) {
-	x := []rune(buf.Document().TextBeforeCursor())
-	buf.CursorLeft(len(x))
+	doc := buf.Document()
+	lead_len := len([]rune(doc.CurrentLineBeforeCursor()))
+	if lead_len > 0 {
+		buf.CursorLeft(lead_len)
+	} else if len(doc.TextBeforeCursor()) > 0 {
+		buf.cursorPosition-- // move before '\n'
+		beginning_of_line(buf)
+	}
 }
 
 // delete_char Delete character under the cursor

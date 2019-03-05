@@ -80,7 +80,9 @@ func (p *Prompt) Run() (exitCode int) {
 				debug.AssertNoError(p.in.TearDown())
 				p.executor(exec.input)
 
-				p.completion.Update(*p.buf.Document())
+				if p.completion.showAtStart {
+					p.completion.Update(*p.buf.Document())
+				}
 				p.renderer.Render(p.buf, p.completion)
 
 				// Set raw mode

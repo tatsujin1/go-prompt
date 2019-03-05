@@ -259,6 +259,136 @@ func TestDocument_DisplayCursorPosition(t *testing.T) {
 	}
 }
 
+func TestDocument_DisplayCursorCoord(t *testing.T) {
+	patterns := []struct {
+		document *Document
+		expected Coord
+	}{
+		{
+			document: &Document{
+				Text:           "hello",
+				cursorPosition: 2,
+			},
+			expected: Coord{2, 0},
+		},
+		{
+			document: &Document{
+				Text:           "こんにちは",
+				cursorPosition: 2,
+			},
+			expected: Coord{4, 0},
+		},
+		{
+			document: &Document{
+				Text:           "こんに\nちは",
+				cursorPosition: 5,
+			},
+			expected: Coord{2, 1},
+		},
+		{
+			// If you're facing test failure on this test case and your terminal is iTerm2,
+			// please check 'Profile -> Text' configuration. 'Use Unicode version 9 widths'
+			// must be checked.
+			// https://github.com/c-bata/go-prompt/pull/99
+			document: &Document{
+				Text:           "Добрый день",
+				cursorPosition: 3,
+			},
+			expected: Coord{3, 0},
+		},
+		{
+			// If you're facing test failure on this test case and your terminal is iTerm2,
+			// please check 'Profile -> Text' configuration. 'Use Unicode version 9 widths'
+			// must be checked.
+			// https://github.com/c-bata/go-prompt/pull/99
+			document: &Document{
+				Text:           "Добр\nый день",
+				cursorPosition: 7,
+			},
+			expected: Coord{2, 1},
+		},
+	}
+
+	passed := 0
+	for idx, p := range patterns {
+		ac := p.document.DisplayCursorCoord(80)
+		if ac != p.expected {
+			t.Errorf("[%d] Expected %+v, got %+v", idx, p.expected, ac)
+		} else {
+			passed++
+		}
+	}
+	t.Logf("%d passed", passed)
+}
+
+func TestDocument_DisplayCursorCoordWithPrefix(t *testing.T) {
+	patterns := []struct {
+		prefix   string
+		document *Document
+		expected Coord
+	}{
+		{
+			prefix: "prefix⯈",
+			document: &Document{
+				Text:           "this does not affect the result",
+				cursorPosition: 0,
+			},
+			expected: Coord{7, 0},
+		},
+		{
+			prefix: "prefix⯈",
+			document: &Document{
+				Text:           "hello",
+				cursorPosition: 2,
+			},
+			expected: Coord{9, 0},
+		},
+		{
+			prefix: "prefix⯈",
+			document: &Document{
+				Text:           "こんにちは",
+				cursorPosition: 2,
+			},
+			expected: Coord{11, 0},
+		},
+		{
+			prefix: "this long prefix is ignored because the text is multi-line",
+			document: &Document{
+				Text:           "こんに\nちは",
+				cursorPosition: 5,
+			},
+			expected: Coord{2, 1},
+		},
+		{
+			prefix: "prefix⯈",
+			document: &Document{
+				Text:           "Добрый день",
+				cursorPosition: 3,
+			},
+			expected: Coord{10, 0},
+		},
+		{
+			prefix: "this long prefix is ignored because the text is multi-line",
+			document: &Document{
+				Text:           "Добр\nый день",
+				cursorPosition: 7,
+			},
+			expected: Coord{2, 1},
+		},
+	}
+
+	passed := 0
+	for idx, p := range patterns {
+		ac := p.document.DisplayCursorCoordWithPrefix(80, p.prefix)
+		if ac != p.expected {
+			t.Errorf("[%d] Expected %+v, got %+v", idx, p.expected, ac)
+		} else {
+			passed++
+		}
+	}
+	t.Logf("%d passed", passed)
+}
+
 func TestDocument_GetCharRelativeToCursor(t *testing.T) {
 	patterns := []struct {
 		document *Document

@@ -9,13 +9,16 @@ import (
 	runewidth "github.com/mattn/go-runewidth"
 )
 
-// Document has text displayed in terminal and cursor position.
+// Document is a read-only view of the current editor content
 type Document struct {
 	Text string
-	// This represents a index in a rune array of Document.Text.
+	// This represents a index in '[]rune(Text)'.
 	// So if Document is "日本(cursor)語", cursorPosition is 2.
 	// But DisplayedCursorPosition returns 4 because '日' and '本' are double width characters.
 	cursorPosition int
+
+	linesCache      []string
+	startIndexCache []int
 }
 
 type Coord struct {
@@ -325,28 +328,32 @@ func (d *Document) CurrentLine() string {
 
 // Array pointing to the start indexes of all the lines.
 func (d *Document) lineStartIndexes() []int {
-	// TODO: Cache, because this is often reused.
-	// (If it is used, it's often used many times.
-	// And this has to be fast for editing big documents!)
-	lc := d.LineCount()
-	lengths := make([]int, lc)
-	for i, l := range d.Lines() {
-		lengths[i] = len(l)
+	if d.startIndexCache == nil {
+		// TODO: Cache, because this is often reused.
+		// (If it is used, it's often used many times.
+		// And this has to be fast for editing big documents!)
+		lc := d.LineCount()
+		lengths := make([]int, lc)
+		for i, l := range d.Lines() {
+			lengths[i] = len(l)
+		}
+
+		// Calculate cumulative sums.
+		indexes := make([]int, lc+1)
+		indexes[0] = 0 // https://github.com/jonathanslenders/python-prompt-toolkit/blob/master/prompt_toolkit/document.py#L189
+		pos := 0
+		for i, l := range lengths {
+			pos += l + 1
+			indexes[i+1] = pos
+		}
+		if lc > 1 {
+			// Pop the last item. (This is not a new line.)
+			indexes = indexes[:lc]
+		}
+		d.startIndexCache = indexes
 	}
 
-	// Calculate cumulative sums.
-	indexes := make([]int, lc+1)
-	indexes[0] = 0 // https://github.com/jonathanslenders/python-prompt-toolkit/blob/master/prompt_toolkit/document.py#L189
-	pos := 0
-	for i, l := range lengths {
-		pos += l + 1
-		indexes[i+1] = pos
-	}
-	if lc > 1 {
-		// Pop the last item. (This is not a new line.)
-		indexes = indexes[:lc]
-	}
-	return indexes
+	return d.startIndexCache
 }
 
 // For the index of a character at a certain line, calculate the index of
@@ -427,8 +434,10 @@ func (d *Document) GetCursorDownPosition(count int, preferredColumn int) int {
 
 // Lines returns the array of all the lines.
 func (d *Document) Lines() []string {
-	// TODO: Cache, because this one is reused very often.
-	return strings.Split(d.Text, "\n")
+	if d.linesCache == nil {
+		d.linesCache = strings.Split(d.Text, "\n")
+	}
+	return d.linesCache
 }
 
 // LineCount return the number of lines in this document. If the document ends

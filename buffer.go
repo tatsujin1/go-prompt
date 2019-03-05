@@ -84,7 +84,6 @@ func (b *Buffer) InsertText(v string, overwrite bool, moveCursor bool) {
 	if moveCursor {
 		b.cursorPosition += len([]rune(v))
 		b.preferredColumn = b.Document().CursorPositionCol()
-		fmt.Fprintf(os.Stderr, "preferredColumn: %d\n", b.preferredColumn)
 	}
 }
 
@@ -128,7 +127,6 @@ func (b *Buffer) CursorLeft(count int) {
 	l := b.Document().GetCursorLeftPosition(count)
 	b.cursorPosition += l
 	b.preferredColumn = b.Document().CursorPositionCol()
-	fmt.Fprintf(os.Stderr, "preferredColumn: %d\n", b.preferredColumn)
 	return
 }
 
@@ -137,7 +135,6 @@ func (b *Buffer) CursorRight(count int) {
 	l := b.Document().GetCursorRightPosition(count)
 	b.cursorPosition += l
 	b.preferredColumn = b.Document().CursorPositionCol()
-	fmt.Fprintf(os.Stderr, "preferredColumn: %d\n", b.preferredColumn)
 	return
 }
 
@@ -179,7 +176,6 @@ func (b *Buffer) DeleteBeforeCursor(count int) (deleted string) {
 		})
 	}
 	b.preferredColumn = b.Document().CursorPositionCol()
-	fmt.Fprintf(os.Stderr, "preferredColumn: %d\n", b.preferredColumn)
 	return
 }
 

@@ -121,8 +121,8 @@ type ConsoleWriter interface {
 	AskForCPR()
 	// SaveCursor saves current cursor position.
 	SaveCursor()
-	// UnSaveCursor restores cursor position after a Save Cursor.
-	UnSaveCursor()
+	// RestoreCursor restores cursor position saved by the last SaveCursor.
+	RestoreCursor()
 
 	/* Scrolling */
 

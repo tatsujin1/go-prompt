@@ -175,8 +175,8 @@ func (w *VT100Writer) SaveCursor() {
 	return
 }
 
-// UnSaveCursor restores cursor position after a Save Cursor.
-func (w *VT100Writer) UnSaveCursor() {
+// RestoreCursor restores cursor position saved by the last SaveCursor.
+func (w *VT100Writer) RestoreCursor() {
 	w.WriteRaw([]byte{0x1b, '[', 'u'})
 	return
 }

@@ -68,19 +68,33 @@ func kill_word(buf *Buffer) {
 	//   join with the next line and call again on the new buffer.
 	doc := buf.Document()
 	wend := doc.FindEndOfCurrentWordWithSpace()
-	deleted := buf.Delete(wend - doc.CursorPositionCol())
-	// TODO: copy 'deleted' to clipboard
-	_ = deleted
+	clipboard = buf.Delete(wend - doc.CursorPositionCol())
 }
 
 // delete and copy word before cursor
 func backward_kill_word(buf *Buffer) {
 	// TODO: if cursor is at the beginning of the line (and there is a preceeding line),
 	//   join with previous line and call again on new buffer.
-	deleted := buf.DeleteBeforeCursor(len([]rune(buf.Document().GetWordBeforeCursorWithSpace())))
-	//doc := buf.Document()
-	//wstart := doc.FindStartOfPreviousWordWithSpace()
-	//deleted := buf.DeleteBeforeCursor(doc.CursorPositionCol() - wstart)
-	// TODO: copy 'deleted' to clipboard
-	_ = deleted
+	clipboard = buf.DeleteBeforeCursor(len([]rune(buf.Document().GetWordBeforeCursorWithSpace())))
+}
+
+func kill_line(buf *Buffer) {
+	doc := buf.Document()
+	x := []rune(doc.CurrentLineAfterCursor())
+	if len(x) > 0 {
+		clipboard = buf.Delete(len(x))
+	} else if !doc.CursorOnLastLine() {
+		buf.DeleteBeforeCursor(1)
+	}
+}
+
+func backward_kill_line(buf *Buffer) {
+	x := []rune(buf.Document().TextBeforeCursor())
+	clipboard = buf.DeleteBeforeCursor(len(x))
+}
+
+func yank(buf *Buffer) {
+	// TODO: output bracketed paste ON ("\x1b[?2004h") during rendering
+	buf.InsertText(clipboard, false, true)
+	// TODO: output bracketed paste OFF ("\x1b[?2004l") during rendering
 }

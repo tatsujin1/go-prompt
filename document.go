@@ -112,12 +112,14 @@ func (d *Document) GetCharRelativeToCursor(offset int) (r rune) {
 }
 
 // TextBeforeCursor returns the text before the cursor.
+//   includes preceeding lines if cursor is not on the 1st line.
 func (d *Document) TextBeforeCursor() string {
 	r := []rune(d.Text)
 	return string(r[:d.cursorPosition])
 }
 
 // TextAfterCursor returns the text after the cursor.
+//   includes following lines if cursor is not on the last line.
 func (d *Document) TextAfterCursor() string {
 	r := []rune(d.Text)
 	return string(r[d.cursorPosition:])

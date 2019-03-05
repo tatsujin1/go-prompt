@@ -97,4 +97,6 @@ var emacsKeyBindings = map[KeyCode]KeyBindFunc{
 	Alt | Delete:        func(e *Event) { backward_kill_word(e.Buffer()) },
 	Control | Delete:    func(e *Event) { kill_word(e.Buffer()) },
 	Control | Backspace: func(e *Event) { backward_kill_word(e.Buffer()) },
+	Control | Left:      func(e *Event) { backward_word(e.Buffer()) },
+	Control | Right:     func(e *Event) { forward_word(e.Buffer()) },
 }

@@ -50,9 +50,9 @@ func (p *Prompt) Run() (exitCode int) {
 	go p.readBuffer(bufCh, stopReadBufCh)
 
 	exitCh := make(chan int)
-	winSizeCh := make(chan *WinSize)
+	termSizeCh := make(chan *WinSize)
 	stopHandleSignalCh := make(chan struct{}, 1) // buffered so the deferred tear down doesn't block
-	go p.handleSignals(exitCh, winSizeCh, stopHandleSignalCh)
+	go p.handleSignals(exitCh, termSizeCh, stopHandleSignalCh)
 
 	defer func() {
 		stopReadBufCh <- struct{}{}
@@ -63,12 +63,14 @@ func (p *Prompt) Run() (exitCode int) {
 	for {
 		select {
 		case cs := <-bufCh:
-			if shouldExit, e := p.feed(cs); shouldExit {
+			if shouldExit, exec := p.feed(cs); shouldExit {
 				p.renderer.BreakLine(p.buf)
 				stopReadBufCh <- struct{}{}
 				stopHandleSignalCh <- struct{}{}
 				return
-			} else if e != nil {
+			} else if exec != nil {
+				// execute entered command-line
+
 				// Stop goroutine to run readBuffer function
 				stopReadBufCh <- struct{}{}
 				stopHandleSignalCh <- struct{}{}
@@ -76,7 +78,7 @@ func (p *Prompt) Run() (exitCode int) {
 				// Unset raw mode
 				// Reset to Blocking mode because returned EAGAIN when still set non-blocking mode.
 				debug.AssertNoError(p.in.TearDown())
-				p.executor(e.input)
+				p.executor(exec.input)
 
 				p.completion.Update(*p.buf.Document())
 				p.renderer.Render(p.buf, p.completion)
@@ -84,12 +86,12 @@ func (p *Prompt) Run() (exitCode int) {
 				// Set raw mode
 				debug.AssertNoError(p.in.Setup())
 				go p.readBuffer(bufCh, stopReadBufCh)
-				go p.handleSignals(exitCh, winSizeCh, stopHandleSignalCh)
+				go p.handleSignals(exitCh, termSizeCh, stopHandleSignalCh)
 			} else {
 				p.completion.Update(*p.buf.Document())
 				p.renderer.Render(p.buf, p.completion)
 			}
-		case w := <-winSizeCh:
+		case w := <-termSizeCh:
 			p.renderer.UpdateWinSize(w)
 			p.renderer.Render(p.buf, p.completion)
 		case code := <-exitCh:
@@ -107,9 +109,9 @@ func (p *Prompt) Run() (exitCode int) {
 func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 	key := GetKey(cs)
 
-	fmt.Fprintf(os.Stderr, "got key: %v\n", []byte(cs))
+	fmt.Fprintf(os.Stderr, "--> key: %v\n", []byte(cs))
 
-	p.buf.flags.translated_key = Undefined
+	p.buf.flags.translatedKey = Undefined
 
 	// completion
 	completing := p.completion.Completing()
@@ -123,11 +125,11 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 		shouldExit = true
 		return
 	}
-	if p.buf.flags.translated_key != Undefined {
-		if p.buf.flags.translated_key == Ignore {
+	if tkey := p.buf.flags.translatedKey; tkey != Undefined {
+		if tkey == Ignore {
 			return
 		}
-		key = p.buf.flags.translated_key
+		key = tkey
 	}
 
 	switch key {
@@ -135,8 +137,10 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 		p.renderer.BreakLine(p.buf)
 
 		exec = &Exec{input: p.buf.Text()}
+
 		p.buf = NewBuffer()
-		if exec.input != "" {
+
+		if len(exec.input) > 0 {
 			p.history.Add(exec.input)
 		}
 	case ControlC:
@@ -208,28 +212,34 @@ func (p *Prompt) handleCompletionKeyBinding(key KeyCode, completing bool) {
 			}
 			p.buf.InsertText(s.Text, false, true)
 		}
+
 		p.completion.Reset()
 	}
 }
 
 func (p *Prompt) handleKeyBinding(key KeyCode) (KeyBindResult, bool) {
+	ev := NewKeyEvent(p.buf, key)
+	// TODO: expose an API for the handlers:
+	//   the handler can then do e.g.:
+	//   ev.CallFunction("delete-char-backwards", args...)
+
 	// Custom key bindings
 	if fn, ok := p.keyBindings[key]; ok {
 		fmt.Fprintf(os.Stderr, "executing custom key bind\n")
-		return fn(p.buf), true
+		return fn(ev), true
 	}
 
 	// "generic" key bindings
 	if fn, ok := commonKeyBindings[key]; ok {
 		fmt.Fprintf(os.Stderr, "executing common key bind\n")
-		return fn(p.buf), true
+		return fn(ev), true
 	}
 
 	// mode-specific key bindings
 	if p.editMode == EmacsMode {
 		if fn, ok := emacsKeyBindings[key]; ok {
 			fmt.Fprintf(os.Stderr, "executing emacs key bind\n")
-			return fn(p.buf), true
+			return fn(ev), true
 		}
 	}
 
@@ -238,7 +248,8 @@ func (p *Prompt) handleKeyBinding(key KeyCode) (KeyBindResult, bool) {
 
 func (p *Prompt) handleControlSequenceBinding(cs ControlSequence) (KeyBindResult, bool) {
 	if fn, ok := p.ControlSequenceBindings[cs]; ok {
-		return fn(p.buf), true
+		ev := NewCtrlEvent(p.buf, cs)
+		return fn(ev), true
 	}
 	return nil, false
 }

@@ -1,48 +1,71 @@
 package prompt
 
-// GoLineEnd Go to the End of the line
-func GoLineEnd(buf *Buffer) {
+// end_of_line Go to the End of the line
+func end_of_line(buf *Buffer) {
 	x := []rune(buf.Document().TextAfterCursor())
 	buf.CursorRight(len(x))
 }
 
-// GoLineBeginning Go to the beginning of the line
-func GoLineBeginning(buf *Buffer) {
+// beginning_of_line Go to the beginning of the line
+func beginning_of_line(buf *Buffer) {
 	x := []rune(buf.Document().TextBeforeCursor())
 	buf.CursorLeft(len(x))
 }
 
-// DeleteChar Delete character under the cursor
-func DeleteChar(buf *Buffer) {
+// delete_char Delete character under the cursor
+func delete_char(buf *Buffer) {
 	buf.Delete(1)
 }
 
-// DeleteWord Delete word before the cursor
-func DeleteWord(buf *Buffer) {
+// delete_word Delete word before the cursor
+func delete_word(buf *Buffer) {
 	buf.DeleteBeforeCursor(len([]rune(buf.Document().TextBeforeCursor())) - buf.Document().FindStartOfPreviousWordWithSpace())
 }
 
-// DeleteBeforeChar Go to Backspace
-func DeleteBeforeChar(buf *Buffer) {
+// backward_delete_char Go to Backspace
+func backward_delete_char(buf *Buffer) {
 	buf.DeleteBeforeCursor(1)
 }
 
-// GoRightChar Forward one character
-func GoRightChar(buf *Buffer) {
+// forward_char Forward one character
+func forward_char(buf *Buffer) {
 	buf.CursorRight(1)
 }
 
-// GoLeftChar Backward one character
-func GoLeftChar(buf *Buffer) {
+// backward_char Backward one character
+func backward_char(buf *Buffer) {
 	buf.CursorLeft(1)
 }
 
-// GoRightWord Forward one word
-func GoRightWord(buf *Buffer) {
+// forward_word Forward one word
+func forward_word(buf *Buffer) {
 	buf.CursorRight(buf.Document().FindEndOfCurrentWordWithSpace())
 }
 
-// GoLeftWord Backward one word
-func GoLeftWord(buf *Buffer) {
+// backward_word Backward one word
+func backward_word(buf *Buffer) {
 	buf.CursorLeft(len([]rune(buf.Document().TextBeforeCursor())) - buf.Document().FindStartOfPreviousWordWithSpace())
+}
+
+// delete and copy word at cursor
+func kill_word(buf *Buffer) {
+	// TODO: if cursor is at the end of the line (and there is a following line),
+	//   join with the next line and call again on the new buffer.
+	doc := buf.Document()
+	wend := doc.FindEndOfCurrentWordWithSpace()
+	deleted := buf.Delete(wend - doc.CursorPositionCol())
+	// TODO: copy 'deleted' to clipboard
+	_ = deleted
+}
+
+// delete and copy word before cursor
+func backward_kill_word(buf *Buffer) {
+	// TODO: if cursor is at the beginning of the line (and there is a preceeding line),
+	//   join with previous line and call again on new buffer.
+	deleted := buf.DeleteBeforeCursor(len([]rune(buf.Document().GetWordBeforeCursorWithSpace())))
+	//doc := buf.Document()
+	//wstart := doc.FindStartOfPreviousWordWithSpace()
+	//deleted := buf.DeleteBeforeCursor(doc.CursorPositionCol() - wstart)
+	// TODO: copy 'deleted' to clipboard
+	_ = deleted
 }

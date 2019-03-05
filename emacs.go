@@ -32,88 +32,73 @@ Editing
 * [x] Ctrl + k   Cut the Line after the cursor to the clipboard.
 * [x] Ctrl + u   Cut/delete the Line before the cursor to the clipboard.
 
-* [ ] Ctrl + t   Swap the last two characters before the cursor (typo).
-* [ ] Esc  + t   Swap the last two words before the cursor.
+* [ ] Ctrl + t   Swap the last two characters before the cursor.
+* [ ] Alt + t    Swap the word before the cursor with the word on/after the cursor.
 
-* [ ] ctrl + y   Paste the last thing to be cut (yank)
-* [ ] ctrl + _   Undo
+* [ ] Ctrl + y   Paste (yank) the last thing to be cut.
+* [ ] Ctrl + _   Undo.
 
-* [ ] alt + f    Move cursor to beginning of current/next word
-* [ ] alt + b    Move cursor to beginning of current/previous word
+* [*] Ctrl + Del Delete word after cursor
+* [*] Ctrl + BS  Delete word before cursor
+* [x] Alt + BS   Delete word before cursor
+* [x] Alt + Del  Delete word before cursor
+* [x] Alt + f    Move cursor to beginning of current/next word.
+* [x] Alt + b    Move cursor to beginning of current/previous word.
 
+* [ ] Alt + c    Capitalize word and move to next word.
+* [ ] Alt + u    Uppercase word and move to next word.
+* [ ] Alt + l    Lowercase word and move to next word.
 
 */
 
 var emacsKeyBindings = map[KeyCode]KeyBindFunc{
 	// Go to the End of the line
-	ControlE: func(buf *Buffer) KeyBindResult {
-		x := []rune(buf.Document().TextAfterCursor())
-		buf.CursorRight(len(x))
-		return nil
-	},
+	Control | E: func(e *Event) KeyBindResult { end_of_line(e.Buffer()); return nil },
 	// Go to the beginning of the line
-	ControlA: func(buf *Buffer) KeyBindResult {
-		x := []rune(buf.Document().TextBeforeCursor())
-		buf.CursorLeft(len(x))
+	Control | A: func(e *Event) KeyBindResult { beginning_of_line(e.Buffer()); return nil },
+	// Cut from cursor to the end of the Line
+	Control | K: func(e *Event) KeyBindResult {
+		// TODO: kill_line()
+		x := []rune(e.Buffer().Document().TextAfterCursor())
+		e.Buffer().Delete(len(x))
 		return nil
 	},
-	// Cut the Line after the cursor
-	ControlK: func(buf *Buffer) KeyBindResult {
-		x := []rune(buf.Document().TextAfterCursor())
-		buf.Delete(len(x))
-		return nil
-	},
-	// Cut/delete the Line before the cursor
-	ControlU: func(buf *Buffer) KeyBindResult {
-		x := []rune(buf.Document().TextBeforeCursor())
-		buf.DeleteBeforeCursor(len(x))
+	// Cut from cursor to the beginning of the line
+	Control | U: func(e *Event) KeyBindResult {
+		// TODO: backward_kill_line()
+		x := []rune(e.Buffer().Document().TextBeforeCursor())
+		e.Buffer().DeleteBeforeCursor(len(x))
 		return nil
 	},
 	// Delete character under the cursor
-	ControlD: func(buf *Buffer) KeyBindResult {
-		if len(buf.Text()) > 0 {
-			buf.Delete(1)
+	Control | D: func(e *Event) KeyBindResult {
+		if len(e.Buffer().Text()) > 0 {
+			delete_char(e.Buffer())
 		} else {
 			// pressing C-d on an empty edit means EOF
-			buf.SetEOF()
+			e.Buffer().SetEOF()
 		}
 		return nil
 	},
-	// Backspace
-	ControlH: func(buf *Buffer) KeyBindResult {
-		buf.DeleteBeforeCursor(1)
-		return nil
-	},
-	// Right allow: Forward one character
-	ControlF: func(buf *Buffer) KeyBindResult {
-		buf.CursorRight(1)
-		return nil
-	},
-	// Left allow: Backward one character
-	ControlB: func(buf *Buffer) KeyBindResult {
-		buf.CursorLeft(1)
-		return nil
-	},
-	// Cut the Word before the cursor.
-	ControlW: func(buf *Buffer) KeyBindResult {
-		buf.DeleteBeforeCursor(len([]rune(buf.Document().GetWordBeforeCursorWithSpace())))
-		return nil
-	},
 	// Clear the Screen, similar to the clear command
-	ControlL: func(buf *Buffer) KeyBindResult {
+	Control | L: func(*Event) KeyBindResult {
 		consoleWriter.EraseScreen()
 		consoleWriter.CursorGoTo(0, 0)
 		debug.AssertNoError(consoleWriter.Flush())
 		return nil
 	},
-	// Move cursor to beginning of current/next word
-	Alt | F: func(buf *Buffer) KeyBindResult {
-		GoRightWord(buf)
-		return nil
-	},
-	// Move cursor to beginning of current/previous word
-	Alt | B: func(buf *Buffer) KeyBindResult {
-		GoLeftWord(buf)
-		return nil
-	},
+	// Backspace
+	Control | H: func(e *Event) KeyBindResult { backward_delete_char(e.Buffer()); return nil },
+	// Right arrow: Forward one character
+	Control | F: func(e *Event) KeyBindResult { forward_char(e.Buffer()); return nil },
+	// Left arrow: Backward one character
+	Control | B: func(e *Event) KeyBindResult { backward_char(e.Buffer()); return nil },
+	// Cut the Word before the cursor.
+	Control | W:         func(e *Event) KeyBindResult { backward_kill_word(e.Buffer()); return nil },
+	Alt | F:             func(e *Event) KeyBindResult { forward_word(e.Buffer()); return nil },
+	Alt | B:             func(e *Event) KeyBindResult { backward_word(e.Buffer()); return nil },
+	Alt | Backspace:     func(e *Event) KeyBindResult { backward_kill_word(e.Buffer()); return nil },
+	Alt | Delete:        func(e *Event) KeyBindResult { backward_kill_word(e.Buffer()); return nil },
+	Control | Delete:    func(e *Event) KeyBindResult { kill_word(e.Buffer()); return nil },
+	Control | Backspace: func(e *Event) KeyBindResult { backward_kill_word(e.Buffer()); return nil },
 }

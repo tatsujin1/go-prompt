@@ -22,11 +22,9 @@ func TestEmacsKeyBindings(t *testing.T) {
 	}
 }
 
-func applyEmacsKeyBind(buf *Buffer, key Key) {
-	for i := range emacsKeyBindings {
-		kb := emacsKeyBindings[i]
-		if kb.Key == key {
-			kb.Fn(buf)
-		}
+func applyEmacsKeyBind(buf *Buffer, key KeyCode) {
+	if fn, ok := emacsKeyBindings[key]; ok {
+		ev := NewKeyEvent(buf, key)
+		fn(ev)
 	}
 }

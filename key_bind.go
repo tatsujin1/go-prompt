@@ -2,8 +2,8 @@ package prompt
 
 type KeyBindResult error
 
-// KeyBindFunc receives buffer and processed it.
-type KeyBindFunc func(*Buffer) KeyBindResult
+// KeyBindFunc receives an Event and processed it.
+type KeyBindFunc func(*Event) KeyBindResult
 
 // KeyBind represents which key should do what operation.
 type KeyBind struct {
@@ -30,15 +30,33 @@ const (
 
 var commonKeyBindings = map[KeyCode]KeyBindFunc{
 	// Go to the End of the line
-	End: func(b *Buffer) KeyBindResult { GoLineEnd(b); return nil },
+	End: func(e *Event) KeyBindResult {
+		end_of_line(e.Buffer())
+		return nil
+	},
 	// Go to the beginning of the line
-	Home: func(b *Buffer) KeyBindResult { GoLineBeginning(b); return nil },
+	Home: func(e *Event) KeyBindResult {
+		beginning_of_line(e.Buffer())
+		return nil
+	},
 	// Delete character under/at the cursor
-	Delete: func(b *Buffer) KeyBindResult { DeleteChar(b); return nil },
+	Delete: func(e *Event) KeyBindResult {
+		delete_char(e.Buffer())
+		return nil
+	},
 	// Backspace: delete character before the cursor
-	Backspace: func(b *Buffer) KeyBindResult { DeleteBeforeChar(b); return nil },
+	Backspace: func(e *Event) KeyBindResult {
+		backward_delete_char(e.Buffer())
+		return nil
+	},
 	// Right arrow: Forward one character
-	Right: func(b *Buffer) KeyBindResult { GoRightChar(b); return nil },
+	Right: func(e *Event) KeyBindResult {
+		forward_char(e.Buffer())
+		return nil
+	},
 	// Left arrow: Backward one character
-	Left: func(b *Buffer) KeyBindResult { GoLeftChar(b); return nil },
+	Left: func(e *Event) KeyBindResult {
+		backward_char(e.Buffer())
+		return nil
+	},
 }

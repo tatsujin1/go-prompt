@@ -9,15 +9,15 @@ import (
 )
 
 type StateFlags struct {
-	end_edit       bool
-	eof            bool
-	translated_key KeyCode
+	endEdit       bool
+	eof           bool
+	translatedKey KeyCode
 }
 
 // Buffer emulates the console buffer.
 type Buffer struct {
 	text            string
-	cursorPosition  int
+	cursorPosition  int // relative to the absolute beginning
 	cacheDocument   *Document
 	preferredColumn int // Remember the original column for the next up/down movement.
 	flags           StateFlags
@@ -41,16 +41,22 @@ func (b *Buffer) Document() (d *Document) {
 	return b.cacheDocument
 }
 
+// useful for keybind functions
+// TODO: there should be a formal API exposed to these functions
+//   e.g. an 'event' object (as in python prompt-toolkit), where event.CurrentBuffer()
+//        retrieves the buffer now supplied.
+//   called named functions, in readline style e.g. "backward-delete-char"
+
 func (b *Buffer) SetEOF() {
 	b.flags.eof = true
 }
 
 func (b *Buffer) SetEndEdit() {
-	b.flags.end_edit = true
+	b.flags.endEdit = true
 }
 
 func (b *Buffer) SetTranslatedKey(key KeyCode) {
-	b.flags.translated_key = key
+	b.flags.translatedKey = key
 }
 
 // DisplayCursorPosition returns the cursor position on rendered text on terminal emulators.

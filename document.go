@@ -446,6 +446,11 @@ func (d *Document) LineCount() int {
 	return len(d.Lines())
 }
 
+// CursorOnLastLine returns bool whether the cursor is on the last line (multi-line).
+func (d *Document) CursorOnLastLine() bool {
+	return d.LineCount()-1 == d.CursorPositionRow()
+}
+
 // TranslateIndexToPosition given an index for the text, return the corresponding (row, col) tuple.
 // (0-based. Returns (0, 0) for index=0.)
 func (d *Document) TranslateIndexToPosition(index int) (row int, col int) {

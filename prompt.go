@@ -2,7 +2,6 @@ package prompt
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"time"
 
@@ -119,9 +118,7 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 	completing := p.completion.Completing()
 	p.handleCompletionKeyBinding(key, completing)
 
-	if bind_res, ok := p.handleKeyBinding(key); ok && bind_res != nil {
-		p.presentError(bind_res)
-	}
+	p.handleKeyBinding(key)
 
 	if p.buf.flags.eof {
 		shouldExit = true
@@ -171,14 +168,9 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 			return
 		}
 	case Undefined:
-		if bind_res, ok := p.handleControlSequenceBinding(cs); ok && bind_res != nil {
-			if bind_res == io.EOF {
-				shouldExit = true
-				return
-			}
-			p.presentError(bind_res)
+		if !p.handleControlSequenceBinding(cs) {
+			p.buf.InsertText(string(cs), false, true)
 		}
-		p.buf.InsertText(string(cs), false, true)
 	}
 
 	if p.buf.flags.eof {
@@ -219,7 +211,7 @@ func (p *Prompt) handleCompletionKeyBinding(key KeyCode, completing bool) {
 	}
 }
 
-func (p *Prompt) handleKeyBinding(key KeyCode) (KeyBindResult, bool) {
+func (p *Prompt) handleKeyBinding(key KeyCode) bool {
 	ev := NewKeyEvent(p.buf, key)
 	// TODO: expose an API for the handlers:
 	//   the handler can then do e.g.:
@@ -228,32 +220,36 @@ func (p *Prompt) handleKeyBinding(key KeyCode) (KeyBindResult, bool) {
 	// Custom key bindings
 	if fn, ok := p.keyBindings[key]; ok {
 		fmt.Fprintf(os.Stderr, "executing custom key bind\n")
-		return fn(ev), true
+		fn(ev)
+		return true
 	}
 
 	// "generic" key bindings
 	if fn, ok := commonKeyBindings[key]; ok {
 		fmt.Fprintf(os.Stderr, "executing common key bind\n")
-		return fn(ev), true
+		fn(ev)
+		return true
 	}
 
 	// mode-specific key bindings
 	if p.editMode == EmacsMode {
 		if fn, ok := emacsKeyBindings[key]; ok {
 			fmt.Fprintf(os.Stderr, "executing emacs key bind\n")
-			return fn(ev), true
+			fn(ev)
+			return true
 		}
 	}
 
-	return nil, false
+	return false
 }
 
-func (p *Prompt) handleControlSequenceBinding(cs ControlSequence) (KeyBindResult, bool) {
+func (p *Prompt) handleControlSequenceBinding(cs ControlSequence) bool {
 	if fn, ok := p.ControlSequenceBindings[cs]; ok {
 		ev := NewCtrlEvent(p.buf, cs)
-		return fn(ev), true
+		fn(ev)
+		return true
 	}
-	return nil, false
+	return false
 }
 
 // Input just returns user input text.

@@ -53,52 +53,48 @@ Editing
 
 var emacsKeyBindings = map[KeyCode]KeyBindFunc{
 	// Go to the End of the line
-	Control | E: func(e *Event) KeyBindResult { end_of_line(e.Buffer()); return nil },
+	Control | E: func(e *Event) { end_of_line(e.Buffer()) },
 	// Go to the beginning of the line
-	Control | A: func(e *Event) KeyBindResult { beginning_of_line(e.Buffer()); return nil },
+	Control | A: func(e *Event) { beginning_of_line(e.Buffer()) },
 	// Cut from cursor to the end of the Line
-	Control | K: func(e *Event) KeyBindResult {
+	Control | K: func(e *Event) {
 		// TODO: kill_line()
 		x := []rune(e.Buffer().Document().TextAfterCursor())
 		e.Buffer().Delete(len(x))
-		return nil
 	},
 	// Cut from cursor to the beginning of the line
-	Control | U: func(e *Event) KeyBindResult {
+	Control | U: func(e *Event) {
 		// TODO: backward_kill_line()
 		x := []rune(e.Buffer().Document().TextBeforeCursor())
 		e.Buffer().DeleteBeforeCursor(len(x))
-		return nil
 	},
 	// Delete character under the cursor
-	Control | D: func(e *Event) KeyBindResult {
+	Control | D: func(e *Event) {
 		if len(e.Buffer().Text()) > 0 {
 			delete_char(e.Buffer())
 		} else {
 			// pressing C-d on an empty edit means EOF
 			e.Buffer().SetEOF()
 		}
-		return nil
 	},
 	// Clear the Screen, similar to the clear command
-	Control | L: func(*Event) KeyBindResult {
+	Control | L: func(*Event) {
 		consoleWriter.EraseScreen()
 		consoleWriter.CursorGoTo(0, 0)
 		debug.AssertNoError(consoleWriter.Flush())
-		return nil
 	},
 	// Backspace
-	Control | H: func(e *Event) KeyBindResult { backward_delete_char(e.Buffer()); return nil },
+	Control | H: func(e *Event) { backward_delete_char(e.Buffer()) },
 	// Right arrow: Forward one character
-	Control | F: func(e *Event) KeyBindResult { forward_char(e.Buffer()); return nil },
+	Control | F: func(e *Event) { forward_char(e.Buffer()) },
 	// Left arrow: Backward one character
-	Control | B: func(e *Event) KeyBindResult { backward_char(e.Buffer()); return nil },
+	Control | B: func(e *Event) { backward_char(e.Buffer()) },
 	// Cut the Word before the cursor.
-	Control | W:         func(e *Event) KeyBindResult { backward_kill_word(e.Buffer()); return nil },
-	Alt | F:             func(e *Event) KeyBindResult { forward_word(e.Buffer()); return nil },
-	Alt | B:             func(e *Event) KeyBindResult { backward_word(e.Buffer()); return nil },
-	Alt | Backspace:     func(e *Event) KeyBindResult { backward_kill_word(e.Buffer()); return nil },
-	Alt | Delete:        func(e *Event) KeyBindResult { backward_kill_word(e.Buffer()); return nil },
-	Control | Delete:    func(e *Event) KeyBindResult { kill_word(e.Buffer()); return nil },
-	Control | Backspace: func(e *Event) KeyBindResult { backward_kill_word(e.Buffer()); return nil },
+	Control | W:         func(e *Event) { backward_kill_word(e.Buffer()) },
+	Alt | F:             func(e *Event) { forward_word(e.Buffer()) },
+	Alt | B:             func(e *Event) { backward_word(e.Buffer()) },
+	Alt | Backspace:     func(e *Event) { backward_kill_word(e.Buffer()) },
+	Alt | Delete:        func(e *Event) { backward_kill_word(e.Buffer()) },
+	Control | Delete:    func(e *Event) { kill_word(e.Buffer()) },
+	Control | Backspace: func(e *Event) { backward_kill_word(e.Buffer()) },
 }

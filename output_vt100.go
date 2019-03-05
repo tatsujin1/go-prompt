@@ -36,37 +36,37 @@ func (w *VT100Writer) WriteStr(data string) {
 
 /* Erase */
 
-// EraseScreen erases the screen with the background colour and moves the cursor to home.
+// EraseScreen erases the screen with the background colour and moves the cursor to home (cursor doesn't move).
 func (w *VT100Writer) EraseScreen() {
 	w.WriteRaw([]byte{0x1b, '[', '2', 'J'})
 	return
 }
 
-// EraseUp erases the screen from the current line up to the top of the screen.
+// EraseUp erases the screen from the current line up to the top of the screen (cursor doesn't move).
 func (w *VT100Writer) EraseUp() {
 	w.WriteRaw([]byte{0x1b, '[', '1', 'J'})
 	return
 }
 
-// EraseDown erases the screen from the current line down to the bottom of the screen.
+// EraseDown erases the screen from the current line down to the bottom of the screen (cursor doesn't move).
 func (w *VT100Writer) EraseDown() {
 	w.WriteRaw([]byte{0x1b, '[', 'J'})
 	return
 }
 
-// EraseStartOfLine erases from the current cursor position to the start of the current line.
+// EraseStartOfLine erases from the current cursor position to the start of the current line (cursor doesn't move).
 func (w *VT100Writer) EraseStartOfLine() {
 	w.WriteRaw([]byte{0x1b, '[', '1', 'K'})
 	return
 }
 
-// EraseEndOfLine erases from the current cursor position to the end of the current line.
+// EraseEndOfLine erases from the current cursor position to the end of the current line (cursor doesn't move).
 func (w *VT100Writer) EraseEndOfLine() {
 	w.WriteRaw([]byte{0x1b, '[', 'K'})
 	return
 }
 
-// EraseLine erases the entire current line.
+// EraseLine erases the entire current line (cursor doesn't move).
 func (w *VT100Writer) EraseLine() {
 	w.WriteRaw([]byte{0x1b, '[', '2', 'K'})
 	return

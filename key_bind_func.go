@@ -1,5 +1,10 @@
 package prompt
 
+import (
+	"fmt"
+	"os"
+)
+
 var clipboard string
 
 // end_of_line Go to the End of the line
@@ -32,9 +37,10 @@ func delete_char(buf *Buffer) {
 	buf.Delete(1)
 }
 
-// delete_word Delete word before the cursor
+// delete_word Delete word after the cursor
 func delete_word(buf *Buffer) {
-	buf.DeleteBeforeCursor(len([]rune(buf.Document().TextBeforeCursor())) - buf.Document().FindStartOfPreviousWordWithSpace())
+	wend := buf.Document().FindEndOfCurrentWordWithSpace()
+	buf.Delete(wend)
 }
 
 // backward_delete_char Go to Backspace
@@ -73,8 +79,9 @@ func kill_word(buf *Buffer) {
 	// TODO: if cursor is at the end of the line (and there is a following line),
 	//   join with the next line and call again on the new buffer.
 	doc := buf.Document()
-	wend := doc.FindEndOfCurrentWordWithSpace()
-	clipboard = buf.Delete(wend - doc.CursorPositionCol())
+
+	//if ! doc.CursorOnLastLine() && doc.Cursor
+	clipboard = buf.Delete(doc.FindEndOfCurrentWordWithSpace())
 }
 
 // delete and copy word before cursor

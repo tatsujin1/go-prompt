@@ -1,19 +1,8 @@
 package prompt
 
 import (
-	"reflect"
 	"testing"
 )
-
-func TestNewBuffer(t *testing.T) {
-	b := NewBuffer()
-	if b.workingIndex != 0 {
-		t.Errorf("workingIndex should be %#v, got %#v", 0, b.workingIndex)
-	}
-	if !reflect.DeepEqual(b.workingLines, []string{""}) {
-		t.Errorf("workingLines should be %#v, got %#v", []string{""}, b.workingLines)
-	}
-}
 
 func TestBuffer_InsertText(t *testing.T) {
 	b := NewBuffer()

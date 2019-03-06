@@ -241,21 +241,6 @@ func New(executor Executor, completer Completer, opts ...Option) *Prompt {
 
 	renderer := NewRender("> ", defaultWriter)
 
-	renderer.Colors = RenderColors{
-		prefixText:              Blue,
-		previewSuggestionText:   Green,
-		suggestionText:          White,
-		suggestionBG:            Cyan,
-		selectedSuggestionText:  Black,
-		selectedSuggestionBG:    Cyan,
-		descriptionText:         Black,
-		descriptionBG:           Cyan,
-		selectedDescriptionText: White,
-		selectedDescriptionBG:   Cyan,
-		scrollbarThumb:          Gray,
-		scrollbarBG:             Cyan,
-	}
-
 	pt := &Prompt{
 		in:          NewStandardInputParser(),
 		renderer:    renderer,

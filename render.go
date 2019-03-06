@@ -44,10 +44,27 @@ type RenderColors struct {
 	scrollbarBG             Color
 }
 
+var defaultColors = RenderColors{
+	prefixText:              DefaultColor,
+	previewSuggestionText:   White,
+	previewSuggestionBG:     DefaultColor,
+	suggestionText:          Black,
+	suggestionBG:            Gray,
+	selectedSuggestionText:  White,
+	selectedSuggestionBG:    Blue,
+	descriptionText:         Black,
+	descriptionBG:           Yellow,
+	selectedDescriptionText: Gray,
+	selectedDescriptionBG:   Black,
+	scrollbarThumb:          Black,
+	scrollbarBG:             Gray,
+}
+
 func NewRender(prefix string, w ConsoleWriter) *Render {
 	return &Render{
 		prefix: prefix,
 		out:    w,
+		Colors: defaultColors,
 
 		previousLineCount: 1,
 

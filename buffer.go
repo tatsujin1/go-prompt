@@ -47,15 +47,15 @@ func (b *Buffer) Document() (d *Document) {
 //        retrieves the buffer now supplied.
 //   called named functions, in readline style e.g. "backward-delete-char"
 
-func (b *Buffer) SetEOF() {
+func (b *Buffer) setEOF() {
 	b.flags.eof = true
 }
 
-func (b *Buffer) SetEndEdit() {
+func (b *Buffer) setEndEdit() {
 	b.flags.endEdit = true
 }
 
-func (b *Buffer) SetTranslatedKey(key KeyCode) {
+func (b *Buffer) setTranslatedKey(key KeyCode) {
 	b.flags.translatedKey = key
 }
 

@@ -499,9 +499,13 @@ func (d *Document) TranslateRowColToIndex(row int, column int) (index int) {
 	return index
 }
 
-// OnLastLine returns true when we are at the last line.
-func (d *Document) OnLastLine() bool {
+// CursorOnLastLine returns true when we are at the last line.
+func (d *Document) CursorOnLastLine() bool {
 	return d.CursorPositionRow() == (d.LineCount() - 1)
+}
+
+func (d *Document) CursorAtEndOfLine() bool {
+	return len(d.CurrentLineAfterCursor()) == 0
 }
 
 // GetEndOfLinePosition returns relative position for the end of this line.

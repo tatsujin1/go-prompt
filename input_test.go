@@ -24,9 +24,9 @@ func TestPosixParserGetKey(t *testing.T) {
 
 	for _, s := range scenarioTable {
 		t.Run(s.name, func(t *testing.T) {
-			key := GetKey(s.input)
+			key := FindKey(s.input)
 			if key != s.expected {
-				t.Errorf("Should be %s, but got %s", key, s.expected)
+				t.Errorf("Expected %d, but got %d", key, s.expected)
 			}
 		})
 	}

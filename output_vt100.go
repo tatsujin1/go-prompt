@@ -2,6 +2,8 @@ package prompt
 
 import (
 	"bytes"
+	"fmt"
+	"os"
 	"strconv"
 )
 
@@ -244,92 +246,117 @@ func (w *VT100Writer) SetColor(fg, bg Color, bold bool) {
 }
 
 // SetDisplayAttributes to set VT100 display attributes.
-func (w *VT100Writer) SetDisplayAttributes(fg, bg Color, attrs ...DisplayAttribute) {
-	w.WriteRaw([]byte{0x1b, '['}) // control sequence introducer
-	defer w.WriteRaw([]byte{'m'}) // final character
+var CSI []byte
+var end []byte
+var sep []byte
 
-	var separator byte = ';'
+func init() {
+	CSI = []byte{0x1b, '['} // control sequence introducer
+	end = []byte{'m'}
+	sep = []byte{';'}
+}
+
+func (w *VT100Writer) SetDisplayAttributes(fg, bg Color, attrs ...DisplayAttribute) {
+	w.WriteRaw(CSI)
+
+
+	var ok bool
+	var v string
+
 	for i := range attrs {
-		p, ok := displayAttributeParameters[attrs[i]]
-		if !ok {
+		if v, ok = displayAttributeParameters[attrs[i]]; !ok {
 			continue
 		}
-		w.WriteRaw(p)
-		w.WriteRaw([]byte{separator})
+		w.WriteRawStr(v)
+		w.WriteRaw(sep)
 	}
 
-	f, ok := foregroundANSIColors[fg]
-	if !ok {
-		f = foregroundANSIColors[DefaultColor]
+	// foreground color
+	if v, ok = foregroundANSIColors[fg]; !ok {
+		v = foregroundANSIColors[DefaultColor]
 	}
-	w.WriteRaw(f)
-	w.WriteRaw([]byte{separator})
-	b, ok := backgroundANSIColors[bg]
-	if !ok {
-		b = backgroundANSIColors[DefaultColor]
+	w.WriteRawStr(v)
+
+	w.WriteRaw(sep)
+
+	// background color
+	if v, ok = backgroundANSIColors[bg]; !ok {
+		v = backgroundANSIColors[DefaultColor]
 	}
-	w.WriteRaw(b)
+	w.WriteRawStr(v)
+
+	w.WriteRaw(end)
+
 	return
 }
 
-var displayAttributeParameters = map[DisplayAttribute][]byte{
-	DisplayReset:        {'0'},
-	DisplayBold:         {'1'},
-	DisplayLowIntensity: {'2'},
-	DisplayItalic:       {'3'},
-	DisplayUnderline:    {'4'},
-	DisplayBlink:        {'5'},
-	DisplayRapidBlink:   {'6'},
-	DisplayReverse:      {'7'},
-	DisplayInvisible:    {'8'},
-	DisplayCrossedOut:   {'9'},
-	DisplayDefaultFont:  {'1', '0'},
+var displayAttributeParameters = map[DisplayAttribute]string{
+	DisplayReset:        "0",
+	DisplayBold:         "1",
+	DisplayLowIntensity: "2",
+	DisplayItalic:       "3",
+	DisplayUnderline:    "4",
+	DisplayBlink:        "5",
+	DisplayRapidBlink:   "6",
+	DisplayReverse:      "7",
+	DisplayInvisible:    "8",
+	DisplayCrossedOut:   "9",
+	DisplayDefaultFont:  "10",
+	DisplayAltFont1:     "11",
+	DisplayAltFont2:     "12",
+	DisplayAltFont3:     "13",
+	DisplayAltFont4:     "14",
+	DisplayAltFont5:     "15",
+	DisplayAltFont6:     "16",
+	DisplayAltFont7:     "17",
+	DisplayAltFont8:     "18",
+	DisplayAltFont9:     "19",
 }
 
-var foregroundANSIColors = map[Color][]byte{
-	DefaultColor: {'3', '9'},
+var foregroundANSIColors = map[Color]string{
+	DefaultColor: "39",
 
 	// Low intensity.
-	Black:   {'3', '0'},
-	Red:     {'3', '1'},
-	Green:   {'3', '2'},
-	Yellow:  {'3', '3'},
-	Blue:    {'3', '4'},
-	Magenta: {'3', '5'},
-	Cyan:    {'3', '6'},
-	Gray:    {'3', '7'},
+	Black:   "30",
+	Red:     "31",
+	Green:   "32",
+	Yellow:  "33",
+	Blue:    "34",
+	Magenta: "35",
+	Cyan:    "36",
+	Gray:    "37",
 
 	// High intensity.
-	BrightBlack:   {'9', '0'},
-	BrightRed:     {'9', '1'},
-	BrightGreen:   {'9', '2'},
-	BrightYellow:  {'9', '3'},
-	BrightBlue:    {'9', '4'},
-	BrightMagenta: {'9', '5'},
-	BrightCyan:    {'9', '6'},
-	White:         {'9', '7'},
+	BrightBlack:   "90",
+	BrightRed:     "91",
+	BrightGreen:   "92",
+	BrightYellow:  "93",
+	BrightBlue:    "94",
+	BrightMagenta: "95",
+	BrightCyan:    "96",
+	White:         "97",
 }
 
-var backgroundANSIColors = map[Color][]byte{
-	DefaultColor: {'4', '9'},
+var backgroundANSIColors = map[Color]string{
+	DefaultColor: "49",
 
 	// Low intensity.
-	Black:   {'4', '0'},
-	Red:     {'4', '1'},
-	Green:   {'4', '2'},
-	Yellow:  {'4', '3'},
-	Blue:    {'4', '4'},
-	Magenta: {'4', '5'},
-	Cyan:    {'4', '6'},
-	Gray:    {'4', '7'},
+	Black:   "40",
+	Red:     "41",
+	Green:   "42",
+	Yellow:  "43",
+	Blue:    "44",
+	Magenta: "45",
+	Cyan:    "46",
+	Gray:    "47",
 
 	// High intensity
-	BrightBlack:   {'1', '0', '0'},
-	BrightRed:     {'1', '0', '1'},
-	BrightGreen:   {'1', '0', '2'},
-	BrightYellow:  {'1', '0', '3'},
-	BrightBlue:    {'1', '0', '4'},
-	BrightMagenta: {'1', '0', '5'},
-	BrightCyan:    {'1', '0', '6'},
-	White:         {'1', '0', '7'},
+	BrightBlack:   "100",
+	BrightRed:     "101",
+	BrightGreen:   "102",
+	BrightYellow:  "103",
+	BrightBlue:    "104",
+	BrightMagenta: "105",
+	BrightCyan:    "106",
+	White:         "107",
 }

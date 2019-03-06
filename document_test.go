@@ -254,7 +254,7 @@ func TestDocument_DisplayCursorPosition(t *testing.T) {
 	for _, p := range patterns {
 		ac := p.document.DisplayCursorPosition()
 		if ac != p.expected {
-			t.Errorf("Should be %#v, got %#v", p.expected, ac)
+			t.Errorf("Expected %#v, got %#v", p.expected, ac)
 		}
 	}
 }
@@ -421,7 +421,7 @@ func TestDocument_GetCharRelativeToCursor(t *testing.T) {
 		ac := p.document.GetCharRelativeToCursor(1)
 		ex, _ := utf8.DecodeRuneInString(p.expected)
 		if ac != ex {
-			t.Errorf("[%d] Should be %s, got %s", i, string(ex), string(ac))
+			t.Errorf("[%d] Expected %s, got %s", i, string(ex), string(ac))
 		}
 	}
 }
@@ -456,7 +456,7 @@ func TestDocument_TextBeforeCursor(t *testing.T) {
 	for i, p := range patterns {
 		ac := p.document.TextBeforeCursor()
 		if ac != p.expected {
-			t.Errorf("[%d] Should be %s, got %s", i, p.expected, ac)
+			t.Errorf("[%d] Expected %s, got %s", i, p.expected, ac)
 		}
 	}
 }
@@ -499,7 +499,7 @@ func TestDocument_TextAfterCursor(t *testing.T) {
 	for i, p := range pattern {
 		ac := p.document.TextAfterCursor()
 		if ac != p.expected {
-			t.Errorf("[%d] Should be %#v, got %#v", i, p.expected, ac)
+			t.Errorf("[%d] Expected %#v, got %#v", i, p.expected, ac)
 		}
 	}
 }
@@ -567,16 +567,16 @@ func TestDocument_GetWordBeforeCursor(t *testing.T) {
 		if p.sep == "" {
 			ac := p.document.GetWordBeforeCursor()
 			if ac != p.expected {
-				t.Errorf("[%d] Should be %#v, got %#v", i, p.expected, ac)
+				t.Errorf("[%d] Expected %#v, got %#v", i, p.expected, ac)
 			}
 			ac = p.document.GetWordBeforeCursorUntilSeparator("")
 			if ac != p.expected {
-				t.Errorf("[%d] Should be %#v, got %#v", i, p.expected, ac)
+				t.Errorf("[%d] Expected %#v, got %#v", i, p.expected, ac)
 			}
 		} else {
 			ac := p.document.GetWordBeforeCursorUntilSeparator(p.sep)
 			if ac != p.expected {
-				t.Errorf("[%d] Should be %#v, got %#v", i, p.expected, ac)
+				t.Errorf("[%d] Expected %#v, got %#v", i, p.expected, ac)
 			}
 		}
 	}
@@ -638,16 +638,16 @@ func TestDocument_GetWordBeforeCursorWithSpace(t *testing.T) {
 		if p.sep == "" {
 			ac := p.document.GetWordBeforeCursorWithSpace()
 			if ac != p.expected {
-				t.Errorf("Should be %#v, got %#v", p.expected, ac)
+				t.Errorf("Expected %#v, got %#v", p.expected, ac)
 			}
 			ac = p.document.GetWordBeforeCursorUntilSeparatorIgnoreNextToCursor("")
 			if ac != p.expected {
-				t.Errorf("Should be %#v, got %#v", p.expected, ac)
+				t.Errorf("Expected %#v, got %#v", p.expected, ac)
 			}
 		} else {
 			ac := p.document.GetWordBeforeCursorUntilSeparatorIgnoreNextToCursor(p.sep)
 			if ac != p.expected {
-				t.Errorf("Should be %#v, got %#v", p.expected, ac)
+				t.Errorf("Expected %#v, got %#v", p.expected, ac)
 			}
 		}
 	}
@@ -709,16 +709,16 @@ func TestDocument_FindStartOfPreviousWord(t *testing.T) {
 		if p.sep == "" {
 			ac := p.document.FindStartOfPreviousWord()
 			if ac != p.expected {
-				t.Errorf("Should be %#v, got %#v", p.expected, ac)
+				t.Errorf("Expected %#v, got %#v", p.expected, ac)
 			}
 			ac = p.document.FindStartOfPreviousWordUntilSeparator("")
 			if ac != p.expected {
-				t.Errorf("Should be %#v, got %#v", p.expected, ac)
+				t.Errorf("Expected %#v, got %#v", p.expected, ac)
 			}
 		} else {
 			ac := p.document.FindStartOfPreviousWordUntilSeparator(p.sep)
 			if ac != p.expected {
-				t.Errorf("Should be %#v, got %#v", p.expected, ac)
+				t.Errorf("Expected %#v, got %#v", p.expected, ac)
 			}
 		}
 	}
@@ -780,16 +780,16 @@ func TestDocument_FindStartOfPreviousWordWithSpace(t *testing.T) {
 		if p.sep == "" {
 			ac := p.document.FindStartOfPreviousWordWithSpace()
 			if ac != p.expected {
-				t.Errorf("Should be %#v, got %#v", p.expected, ac)
+				t.Errorf("Expected %#v, got %#v", p.expected, ac)
 			}
 			ac = p.document.FindStartOfPreviousWordUntilSeparatorIgnoreNextToCursor("")
 			if ac != p.expected {
-				t.Errorf("Should be %#v, got %#v", p.expected, ac)
+				t.Errorf("Expected %#v, got %#v", p.expected, ac)
 			}
 		} else {
 			ac := p.document.FindStartOfPreviousWordUntilSeparatorIgnoreNextToCursor(p.sep)
 			if ac != p.expected {
-				t.Errorf("Should be %#v, got %#v", p.expected, ac)
+				t.Errorf("Expected %#v, got %#v", p.expected, ac)
 			}
 		}
 	}
@@ -865,16 +865,16 @@ func TestDocument_GetWordAfterCursor(t *testing.T) {
 		if p.sep == "" {
 			ac := p.document.GetWordAfterCursor()
 			if ac != p.expected {
-				t.Errorf("[%d] Should be %#v, got %#v", k, p.expected, ac)
+				t.Errorf("[%d] Expected %#v, got %#v", k, p.expected, ac)
 			}
 			ac = p.document.GetWordAfterCursorUntilSeparator("")
 			if ac != p.expected {
-				t.Errorf("[%d] Should be %#v, got %#v", k, p.expected, ac)
+				t.Errorf("[%d] Expected %#v, got %#v", k, p.expected, ac)
 			}
 		} else {
 			ac := p.document.GetWordAfterCursorUntilSeparator(p.sep)
 			if ac != p.expected {
-				t.Errorf("[%d] Should be %#v, got %#v", k, p.expected, ac)
+				t.Errorf("[%d] Expected %#v, got %#v", k, p.expected, ac)
 			}
 		}
 	}
@@ -958,16 +958,16 @@ func TestDocument_GetWordAfterCursorWithSpace(t *testing.T) {
 		if p.sep == "" {
 			ac := p.document.GetWordAfterCursorWithSpace()
 			if ac != p.expected {
-				t.Errorf("[%d] Should be %#v, got %#v", k, p.expected, ac)
+				t.Errorf("[%d] Expected %#v, got %#v", k, p.expected, ac)
 			}
 			ac = p.document.GetWordAfterCursorUntilSeparatorIgnoreNextToCursor("")
 			if ac != p.expected {
-				t.Errorf("[%d] Should be %#v, got %#v", k, p.expected, ac)
+				t.Errorf("[%d] Expected %#v, got %#v", k, p.expected, ac)
 			}
 		} else {
 			ac := p.document.GetWordAfterCursorUntilSeparatorIgnoreNextToCursor(p.sep)
 			if ac != p.expected {
-				t.Errorf("[%d] Should be %#v, got %#v", k, p.expected, ac)
+				t.Errorf("[%d] Expected %#v, got %#v", k, p.expected, ac)
 			}
 		}
 	}
@@ -1052,16 +1052,16 @@ func TestDocument_FindEndOfCurrentWord(t *testing.T) {
 		if p.sep == "" {
 			ac := p.document.FindEndOfCurrentWord()
 			if ac != p.expected {
-				t.Errorf("[%d] Should be %#v, got %#v", k, p.expected, ac)
+				t.Errorf("[%d] Expected %#v, got %#v", k, p.expected, ac)
 			}
 			ac = p.document.FindEndOfCurrentWordUntilSeparator("")
 			if ac != p.expected {
-				t.Errorf("[%d] Should be %#v, got %#v", k, p.expected, ac)
+				t.Errorf("[%d] Expected %#v, got %#v", k, p.expected, ac)
 			}
 		} else {
 			ac := p.document.FindEndOfCurrentWordUntilSeparator(p.sep)
 			if ac != p.expected {
-				t.Errorf("[%d] Should be %#v, got %#v", k, p.expected, ac)
+				t.Errorf("[%d] Expected %#v, got %#v", k, p.expected, ac)
 			}
 		}
 	}
@@ -1144,16 +1144,16 @@ func TestDocument_FindEndOfCurrentWordWithSpace(t *testing.T) {
 		if p.sep == "" {
 			ac := p.document.FindEndOfCurrentWordWithSpace()
 			if ac != p.expected {
-				t.Errorf("[%d] Should be %#v, got %#v", k, p.expected, ac)
+				t.Errorf("[%d] Expected %#v, got %#v", k, p.expected, ac)
 			}
 			ac = p.document.FindEndOfCurrentWordUntilSeparatorIgnoreNextToCursor("")
 			if ac != p.expected {
-				t.Errorf("[%d] Should be %#v, got %#v", k, p.expected, ac)
+				t.Errorf("[%d] Expected %#v, got %#v", k, p.expected, ac)
 			}
 		} else {
 			ac := p.document.FindEndOfCurrentWordUntilSeparatorIgnoreNextToCursor(p.sep)
 			if ac != p.expected {
-				t.Errorf("[%d] Should be %#v, got %#v", k, p.expected, ac)
+				t.Errorf("[%d] Expected %#v, got %#v", k, p.expected, ac)
 			}
 		}
 	}
@@ -1167,7 +1167,7 @@ func TestDocument_CurrentLineBeforeCursor(t *testing.T) {
 	ac := d.CurrentLineBeforeCursor()
 	ex := "lin"
 	if ac != ex {
-		t.Errorf("Should be %#v, got %#v", ex, ac)
+		t.Errorf("Expected %#v, got %#v", ex, ac)
 	}
 }
 
@@ -1179,7 +1179,79 @@ func TestDocument_CurrentLineAfterCursor(t *testing.T) {
 	ac := d.CurrentLineAfterCursor()
 	ex := "e 2"
 	if ac != ex {
-		t.Errorf("Should be %#v, got %#v", ex, ac)
+		t.Errorf("Expected %#v, got %#v", ex, ac)
+	}
+}
+
+func TestDocument_CursorOnLastLine(t *testing.T) {
+	pattern := []struct {
+		document *Document
+		expected bool
+	}{
+		{
+			document: &Document{
+				Text:           "",
+				cursorPosition: 0,
+			},
+			expected: true,
+		},
+		{
+			document: &Document{
+				Text:           "line 1\nline 2",
+				cursorPosition: len("line 1\nli"),
+			},
+			expected: true,
+		},
+		{
+			document: &Document{
+				Text:           "line 1\nline 2\n",
+				cursorPosition: len("line 1\nli"),
+			},
+			expected: false,
+		},
+	}
+
+	for k, p := range pattern {
+		actual := p.document.CursorOnLastLine()
+		if actual != p.expected {
+			t.Errorf("[%d] Expected %#v, got %#v", k, p.expected, actual)
+		}
+	}
+}
+
+func TestDocument_CursorAtEndOfLine(t *testing.T) {
+	pattern := []struct {
+		document *Document
+		expected bool
+	}{
+		{
+			document: &Document{
+				Text:           "",
+				cursorPosition: 0,
+			},
+			expected: true,
+		},
+		{
+			document: &Document{
+				Text:           "line 1\nline 2",
+				cursorPosition: len("line 1\nli"),
+			},
+			expected: false,
+		},
+		{
+			document: &Document{
+				Text:           "line 1\nline 2\n",
+				cursorPosition: len("line 1\nli"),
+			},
+			expected: true,
+		},
+	}
+
+	for k, p := range pattern {
+		actual := p.document.CursorAtEndOfLine()
+		if actual != p.expected {
+			t.Errorf("[%d] Expected %#v, got %#v", k, p.expected, actual)
+		}
 	}
 }
 
@@ -1191,7 +1263,7 @@ func TestDocument_CurrentLine(t *testing.T) {
 	ac := d.CurrentLine()
 	ex := "line 2"
 	if ac != ex {
-		t.Errorf("Should be %#v, got %#v", ex, ac)
+		t.Errorf("Expected %#v, got %#v", ex, ac)
 	}
 }
 
@@ -1215,11 +1287,11 @@ func TestDocument_CursorPositionRowAndCol(t *testing.T) {
 	for _, test := range cursorPositionTests {
 		ac := test.document.CursorPositionRow()
 		if ac != test.expectedRow {
-			t.Errorf("Should be %#v, got %#v", test.expectedRow, ac)
+			t.Errorf("Expected %#v, got %#v", test.expectedRow, ac)
 		}
 		ac = test.document.CursorPositionCol()
 		if ac != test.expectedCol {
-			t.Errorf("Should be %#v, got %#v", test.expectedCol, ac)
+			t.Errorf("Expected %#v, got %#v", test.expectedCol, ac)
 		}
 	}
 }
@@ -1232,12 +1304,12 @@ func TestDocument_GetCursorLeftPosition(t *testing.T) {
 	ac := d.GetCursorLeftPosition(2)
 	ex := -2
 	if ac != ex {
-		t.Errorf("Should be %#v, got %#v", ex, ac)
+		t.Errorf("Expected %#v, got %#v", ex, ac)
 	}
 	ac = d.GetCursorLeftPosition(10)
 	ex = -3
 	if ac != ex {
-		t.Errorf("Should be %#v, got %#v", ex, ac)
+		t.Errorf("Expected %#v, got %#v", ex, ac)
 	}
 }
 
@@ -1249,13 +1321,13 @@ func TestDocument_GetCursorUpPosition(t *testing.T) {
 	ac := d.GetCursorUpPosition(2, -1)
 	ex := len("lin") - len("line 1\n"+"line 2\n"+"lin")
 	if ac != ex {
-		t.Errorf("Should be %#v, got %#v", ex, ac)
+		t.Errorf("Expected %#v, got %#v", ex, ac)
 	}
 
 	ac = d.GetCursorUpPosition(100, -1)
 	ex = len("lin") - len("line 1\n"+"line 2\n"+"lin")
 	if ac != ex {
-		t.Errorf("Should be %#v, got %#v", ex, ac)
+		t.Errorf("Expected %#v, got %#v", ex, ac)
 	}
 }
 
@@ -1267,13 +1339,13 @@ func TestDocument_GetCursorDownPosition(t *testing.T) {
 	ac := d.GetCursorDownPosition(2, -1)
 	ex := len("line 1\n"+"line 2\n"+"lin") - len("lin")
 	if ac != ex {
-		t.Errorf("Should be %#v, got %#v", ex, ac)
+		t.Errorf("Expected %#v, got %#v", ex, ac)
 	}
 
 	ac = d.GetCursorDownPosition(100, -1)
 	ex = len("line 1\n"+"line 2\n"+"line 3\n"+"line 4\n") - len("lin")
 	if ac != ex {
-		t.Errorf("Should be %#v, got %#v", ex, ac)
+		t.Errorf("Expected %#v, got %#v", ex, ac)
 	}
 }
 
@@ -1285,12 +1357,12 @@ func TestDocument_GetCursorRightPosition(t *testing.T) {
 	ac := d.GetCursorRightPosition(2)
 	ex := 2
 	if ac != ex {
-		t.Errorf("Should be %#v, got %#v", ex, ac)
+		t.Errorf("Expected %#v, got %#v", ex, ac)
 	}
 	ac = d.GetCursorRightPosition(10)
 	ex = 3
 	if ac != ex {
-		t.Errorf("Should be %#v, got %#v", ex, ac)
+		t.Errorf("Expected %#v, got %#v", ex, ac)
 	}
 }
 
@@ -1302,7 +1374,7 @@ func TestDocument_Lines(t *testing.T) {
 	ac := d.Lines()
 	ex := []string{"line 1", "line 2", "line 3", "line 4", ""}
 	if !reflect.DeepEqual(ac, ex) {
-		t.Errorf("Should be %#v, got %#v", ex, ac)
+		t.Errorf("Expected %#v, got %#v", ex, ac)
 	}
 }
 
@@ -1314,7 +1386,7 @@ func TestDocument_LineCount(t *testing.T) {
 	ac := d.LineCount()
 	ex := 5
 	if ac != ex {
-		t.Errorf("Should be %#v, got %#v", ex, ac)
+		t.Errorf("Expected %#v, got %#v", ex, ac)
 	}
 }
 
@@ -1325,17 +1397,17 @@ func TestDocument_TranslateIndexToPosition(t *testing.T) {
 	}
 	row, col := d.TranslateIndexToPosition(len("line 1\nline 2\nlin"))
 	if row != 2 {
-		t.Errorf("Should be %#v, got %#v", 2, row)
+		t.Errorf("Expected %#v, got %#v", 2, row)
 	}
 	if col != 3 {
-		t.Errorf("Should be %#v, got %#v", 3, col)
+		t.Errorf("Expected %#v, got %#v", 3, col)
 	}
 	row, col = d.TranslateIndexToPosition(0)
 	if row != 0 {
-		t.Errorf("Should be %#v, got %#v", 0, row)
+		t.Errorf("Expected %#v, got %#v", 0, row)
 	}
 	if col != 0 {
-		t.Errorf("Should be %#v, got %#v", 0, col)
+		t.Errorf("Expected %#v, got %#v", 0, col)
 	}
 }
 
@@ -1347,28 +1419,12 @@ func TestDocument_TranslateRowColToIndex(t *testing.T) {
 	ac := d.TranslateRowColToIndex(2, 3)
 	ex := len("line 1\nline 2\nlin")
 	if ac != ex {
-		t.Errorf("Should be %#v, got %#v", ex, ac)
+		t.Errorf("Expected %#v, got %#v", ex, ac)
 	}
 	ac = d.TranslateRowColToIndex(0, 0)
 	ex = 0
 	if ac != ex {
-		t.Errorf("Should be %#v, got %#v", ex, ac)
-	}
-}
-
-func TestDocument_OnLastLine(t *testing.T) {
-	d := &Document{
-		Text:           "line 1\nline 2\nline 3",
-		cursorPosition: len("line 1\nline"),
-	}
-	ac := d.OnLastLine()
-	if ac {
-		t.Errorf("Should be %#v, got %#v", false, ac)
-	}
-	d.cursorPosition = len("line 1\nline 2\nline")
-	ac = d.OnLastLine()
-	if !ac {
-		t.Errorf("Should be %#v, got %#v", true, ac)
+		t.Errorf("Expected %#v, got %#v", ex, ac)
 	}
 }
 
@@ -1380,6 +1436,6 @@ func TestDocument_GetEndOfLinePosition(t *testing.T) {
 	ac := d.GetEndOfLinePosition()
 	ex := len("ne 2")
 	if ac != ex {
-		t.Errorf("Should be %#v, got %#v", ex, ac)
+		t.Errorf("Expected %#v, got %#v", ex, ac)
 	}
 }

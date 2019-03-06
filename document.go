@@ -311,13 +311,22 @@ func (d *Document) FindEndOfCurrentWordUntilSeparatorIgnoreNextToCursor(sep stri
 
 // CurrentLineBeforeCursor returns the text from the start of the line until the cursor.
 func (d *Document) CurrentLineBeforeCursor() string {
-	s := strings.Split(d.TextBeforeCursor(), "\n")
-	return s[len(s)-1]
+	before := d.TextBeforeCursor()
+	lf := strings.LastIndex(before, "\n")
+	if lf != -1 {
+		return before[lf+1:]
+	}
+	return before
 }
 
 // CurrentLineAfterCursor returns the text from the cursor until the end of the line.
 func (d *Document) CurrentLineAfterCursor() string {
-	return strings.Split(d.TextAfterCursor(), "\n")[0]
+	after := d.TextAfterCursor()
+	lf := strings.Index(after, "\n")
+	if lf != -1 {
+		return after[:lf]
+	}
+	return after
 }
 
 // CurrentLine return the text on the line where the cursor is. (when the input

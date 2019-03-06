@@ -135,7 +135,7 @@ const (
 	F24
 
 	// Special
-	CPRResponse
+	ReportCursorPosition
 	Vt100MouseEvent
 	WindowsMouseEvent
 	BracketedPaste

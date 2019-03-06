@@ -452,12 +452,10 @@ func (d *Document) Lines() []string {
 // LineCount return the number of lines in this document. If the document ends
 // with a trailing \n, that counts as the beginning of a new line.
 func (d *Document) LineCount() int {
-	return len(d.Lines())
-}
-
-// CursorOnLastLine returns bool whether the cursor is on the last line (multi-line).
-func (d *Document) CursorOnLastLine() bool {
-	return d.LineCount()-1 == d.CursorPositionRow()
+	if d.linesCache == nil {
+		return strings.Count(d.Text, "\n") + 1
+	}
+	return len(d.linesCache)
 }
 
 // TranslateIndexToPosition given an index for the text, return the corresponding (row, col) tuple.

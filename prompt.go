@@ -108,7 +108,7 @@ func (p *Prompt) Run() (exitCode int) {
 }
 
 func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
-	key := GetKey(cs)
+	key := FindKey(cs)
 
 	fmt.Fprintf(os.Stderr, "--> key: %v\n", []byte(cs))
 
@@ -123,8 +123,9 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 	if p.buf.flags.eof {
 		shouldExit = true
 		return
-	}
-	if tkey := p.buf.flags.translatedKey; tkey != Undefined {
+	} else if p.buf.flags.endEdit {
+		key = Enter
+	} else if tkey := p.buf.flags.translatedKey; tkey != Undefined {
 		if tkey == Ignore {
 			return
 		}
@@ -178,10 +179,6 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 	}
 
 	return
-}
-
-func (p *Prompt) presentError(err error) {
-	fmt.Fprintf(os.Stderr, "\x1b[31mError:\x1b[m [%T] %s\n", err, err)
 }
 
 func (p *Prompt) handleCompletionKeyBinding(key KeyCode, completing bool) {

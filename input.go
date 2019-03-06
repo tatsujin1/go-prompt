@@ -18,8 +18,8 @@ type ConsoleParser interface {
 	Read() ([]byte, error)
 }
 
-// GetKey returns Key correspond to input byte codes.
-func GetKey(cs ControlSequence) KeyCode {
+// FindKey returns Key correspond to input byte codes, or Undefined if no key is defined.
+func FindKey(cs ControlSequence) KeyCode {
 	if key, ok := KeySequences[cs]; ok {
 		return key
 	}

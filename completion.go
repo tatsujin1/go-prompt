@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	shortenSuffix = "..."
+	shortenSuffix = "…"
 	leftPrefix    = " "
 	leftSuffix    = " "
 	rightPrefix   = " "
@@ -29,10 +29,10 @@ type Suggest struct {
 
 // CompletionManager manages which suggestion is now selected.
 type CompletionManager struct {
-	selected  int // -1 means nothing one is selected.
-	tmp       []Suggest
-	max       uint16
-	completer Completer
+	selected    int // -1 means nothing one is selected.
+	suggestions []Suggest
+	max         uint16
+	completer   Completer
 
 	verticalScroll int
 	wordSeparator  string
@@ -48,12 +48,12 @@ func (c *CompletionManager) GetSelectedSuggestion() (s Suggest, ok bool) {
 		c.selected = -1
 		return Suggest{}, false
 	}
-	return c.tmp[c.selected], true
+	return c.suggestions[c.selected], true
 }
 
 // GetSuggestions returns the list of suggestion.
 func (c *CompletionManager) GetSuggestions() []Suggest {
-	return c.tmp
+	return c.suggestions
 }
 
 // Reset to select nothing.
@@ -66,7 +66,7 @@ func (c *CompletionManager) Reset() {
 
 // Update to update the suggestions.
 func (c *CompletionManager) Update(in Document) {
-	c.tmp = c.completer(in)
+	c.suggestions = c.completer(in)
 	return
 }
 
@@ -97,15 +97,15 @@ func (c *CompletionManager) Completing() bool {
 
 func (c *CompletionManager) update() {
 	max := int(c.max)
-	if len(c.tmp) < max {
-		max = len(c.tmp)
+	if len(c.suggestions) < max {
+		max = len(c.suggestions)
 	}
 
-	if c.selected >= len(c.tmp) {
+	if c.selected >= len(c.suggestions) {
 		c.Reset()
 	} else if c.selected < -1 {
-		c.selected = len(c.tmp) - 1
-		c.verticalScroll = len(c.tmp) - max
+		c.selected = len(c.suggestions) - 1
+		c.verticalScroll = len(c.suggestions) - max
 	}
 }
 

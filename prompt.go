@@ -214,18 +214,20 @@ func (p *Prompt) handleKeyBinding(key KeyCode) bool {
 	//   the handler can then do e.g.:
 	//   ev.CallFunction("delete-char-backwards", args...)
 
+	handled := false
+
 	// Custom key bindings
 	if fn, ok := p.keyBindings[key]; ok {
 		fmt.Fprintf(os.Stderr, "executing custom key bind\n")
 		fn(ev)
-		return true
+		handled = true
 	}
 
 	// "generic" key bindings
 	if fn, ok := commonKeyBindings[key]; ok {
 		fmt.Fprintf(os.Stderr, "executing common key bind\n")
 		fn(ev)
-		return true
+		handled = true
 	}
 
 	// mode-specific key bindings
@@ -233,20 +235,37 @@ func (p *Prompt) handleKeyBinding(key KeyCode) bool {
 		if fn, ok := emacsKeyBindings[key]; ok {
 			fmt.Fprintf(os.Stderr, "executing emacs key bind\n")
 			fn(ev)
-			return true
+			handled = true
 		}
 	}
 
-	return false
+	if handled {
+		p.postEventHandling(ev)
+	}
+
+	return handled
 }
 
 func (p *Prompt) handleControlSequenceBinding(cs ControlSequence) bool {
 	if fn, ok := p.ControlSequenceBindings[cs]; ok {
 		ev := NewCtrlEvent(p.buf, cs)
 		fn(ev)
+		p.postEventHandling(ev)
 		return true
 	}
 	return false
+}
+
+func (p *Prompt) postEventHandling(ev *Event) {
+	if ev.endEdit {
+		p.buf.setEndEdit()
+	}
+	if ev.eof {
+		p.buf.setEOF()
+	}
+	if ev.translatedKey != Undefined {
+		p.buf.setTranslatedKey(ev.translatedKey)
+	}
 }
 
 // Input just returns user input text.

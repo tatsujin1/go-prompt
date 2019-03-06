@@ -44,6 +44,7 @@ Editing
 * [x] Alt + Del  Delete word before cursor
 * [x] Alt + f    Move cursor to beginning of current/next word.
 * [x] Alt + b    Move cursor to beginning of current/previous word.
+* [x] Alt + d    Delete word before cursor
 
 * [ ] Alt + c    Capitalize word and move to next word.
 * [ ] Alt + u    Uppercase word and move to next word.
@@ -66,7 +67,7 @@ var emacsKeyBindings = map[KeyCode]KeyBindFunc{
 			delete_char(e.Buffer())
 		} else {
 			// pressing C-d on an empty edit means EOF
-			e.Buffer().SetEOF()
+			e.SetEOF()
 		}
 	},
 	// Clear the Screen, similar to the clear command
@@ -85,6 +86,7 @@ var emacsKeyBindings = map[KeyCode]KeyBindFunc{
 	Alt | B:         func(e *Event) { backward_word(e.Buffer()) },
 	Alt | Backspace: func(e *Event) { backward_kill_word(e.Buffer()) },
 	Alt | Delete:    func(e *Event) { backward_kill_word(e.Buffer()) },
+	Alt | D:         func(e *Event) { kill_word(e.Buffer()) },
 	//Alt | W:             func(e *Event) { kill_ring_save(e.Buffer()) },
 	Control | Delete:    func(e *Event) { kill_word(e.Buffer()) },
 	Control | Backspace: func(e *Event) { backward_kill_word(e.Buffer()) },

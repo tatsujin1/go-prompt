@@ -39,6 +39,24 @@ const (
 	DisplayCrossedOut
 	// DisplayDefaultFont set primary(default) font
 	DisplayDefaultFont
+	// DisplayAltFont1
+	DisplayAltFont1
+	// DisplayAltFont2
+	DisplayAltFont2
+	// DisplayAltFont3
+	DisplayAltFont3
+	// DisplayAltFont4
+	DisplayAltFont4
+	// DisplayAltFont5
+	DisplayAltFont5
+	// DisplayAltFont6
+	DisplayAltFont6
+	// DisplayAltFont7
+	DisplayAltFont7
+	// DisplayAltFont8
+	DisplayAltFont8
+	// DisplayAltFont9
+	DisplayAltFont9
 )
 
 // Color represents color on terminal.

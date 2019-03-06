@@ -1,8 +1,6 @@
 package prompt
 
 import (
-	"fmt"
-	"os"
 	"strings"
 
 	"github.com/c-bata/go-prompt/internal/debug"
@@ -147,18 +145,17 @@ func (b *Buffer) CursorRight(count int) {
 // (for multi-line edit).
 func (b *Buffer) CursorUp(count int) {
 	orig := b.preferredColumn
-	if b.preferredColumn == -1 { // -1 means current / don't care
+	if b.preferredColumn == -1 { // -1 means not set
 		orig = b.Document().CursorPositionCol()
 	}
 	b.cursorPosition += b.Document().GetCursorUpPosition(count, orig)
-	fmt.Fprintf(os.Stderr, "cursor up: col %d -> %d\n", orig, b.Document().CursorPositionCol())
 }
 
 // CursorDown move cursor to the next line.
 // (for multi-line edit).
 func (b *Buffer) CursorDown(count int) {
 	orig := b.preferredColumn
-	if b.preferredColumn == -1 { // -1 means current / don't care
+	if b.preferredColumn == -1 { // -1 means not set
 		orig = b.Document().CursorPositionCol()
 	}
 	b.cursorPosition += b.Document().GetCursorDownPosition(count, orig)
@@ -208,7 +205,7 @@ func (b *Buffer) Delete(count int) (deleted string) {
 
 // JoinNextLine joins the next line to the current one by deleting the line ending after the current line.
 func (b *Buffer) JoinNextLine(separator string) {
-	if !b.Document().OnLastLine() {
+	if !b.Document().CursorOnLastLine() {
 		b.cursorPosition += b.Document().GetEndOfLinePosition()
 		b.Delete(1)
 		// Remove spaces

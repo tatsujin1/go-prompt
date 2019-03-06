@@ -1,10 +1,5 @@
 package prompt
 
-import (
-	"fmt"
-	"os"
-)
-
 var clipboard string
 
 // end_of_line Go to the End of the line

@@ -31,11 +31,11 @@ func Choose(prefix string, choices []string, opts ...Option) string {
 }
 
 func newChoiceCompleter(choices []string, filter Filter) Completer {
-	s := make([]Suggest, len(choices))
+	s := make([]Choice, len(choices))
 	for i := range choices {
-		s[i] = Suggest{Text: choices[i]}
+		s[i] = Choice{Text: choices[i]}
 	}
-	return func(x Document) []Suggest {
+	return func(x Document) []Choice {
 		return filter(s, x.GetWordBeforeCursor(), true)
 	}
 }

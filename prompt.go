@@ -12,7 +12,7 @@ import (
 type Executor func(string)
 
 // Completer should return the suggest item from Document.
-type Completer func(Document) []Suggest
+type Completer func(Document) []Choice
 
 // Prompt is core struct of go-prompt.
 type Prompt struct {
@@ -187,16 +187,16 @@ func (p *Prompt) handleCompletionKeyBinding(key KeyCode, completing bool) {
 		if completing { // only if already completing
 			p.completion.Next()
 		}
-	case Tab, ControlI: // next suggestion, or start completing
+	case Tab, ControlI: // next choice, or start completing
 		p.completion.Next()
 	case Up:
 		if completing { // only if already completing
 			p.completion.Previous()
 		}
-	case BackTab: // previous suggestion, or start completing
+	case BackTab: // previous choice, or start completing
 		p.completion.Previous()
 	default:
-		if s, ok := p.completion.GetSelectedSuggestion(); ok {
+		if s, ok := p.completion.Selected(); ok {
 			w := p.buf.Document().GetWordBeforeCursorUntilSeparator(p.completion.wordSeparator)
 			if w != "" {
 				p.buf.DeleteBeforeCursor(len([]rune(w)))

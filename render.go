@@ -251,13 +251,13 @@ func (r *Render) BreakLine(buf *Buffer) {
 const scrollbarWidth = 1
 
 func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
-	suggestions := completions.GetSuggestions()
-	if len(suggestions) == 0 {
+	choices := completions.Choices()
+	if len(choices) == 0 {
 		return
 	}
 	prefix := r.getCurrentPrefix()
-	formatted, width := formatSuggestions(
-		suggestions,
+	formatted, width := formatChoices(
+		choices,
 		int(r.termWidth)-runewidth.StringWidth(prefix)-scrollbarWidth,
 	)
 	// +1 means a width of scrollbar.
@@ -277,7 +277,7 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 	}
 
 	// compute scrollbar parameters
-	contentHeight := len(suggestions)
+	contentHeight := len(choices)
 	fractionVisible := float64(windowHeight) / float64(contentHeight)
 	fractionAbove := float64(completions.verticalScroll) / float64(contentHeight)
 

@@ -2,30 +2,30 @@ package prompt
 
 import "strings"
 
-// Filter is the type to filter the prompt.Suggestion array.
-type Filter func([]Suggest, string, bool) []Suggest
+// Filter is the type to filter the prompt.Choiceion array.
+type Filter func([]Choice, string, bool) []Choice
 
-// FilterHasPrefix checks whether the string completions.Text begins with sub.
-func FilterHasPrefix(completions []Suggest, sub string, ignoreCase bool) []Suggest {
-	return filterSuggestions(completions, sub, ignoreCase, strings.HasPrefix)
+// FilterHasPrefix checks whether the string choices.Text begins with sub.
+func FilterHasPrefix(choices []Choice, sub string, ignoreCase bool) []Choice {
+	return filterChoiceions(choices, sub, ignoreCase, strings.HasPrefix)
 }
 
 // FilterHasSuffix checks whether the completion.Text ends with sub.
-func FilterHasSuffix(completions []Suggest, sub string, ignoreCase bool) []Suggest {
-	return filterSuggestions(completions, sub, ignoreCase, strings.HasSuffix)
+func FilterHasSuffix(choices []Choice, sub string, ignoreCase bool) []Choice {
+	return filterChoiceions(choices, sub, ignoreCase, strings.HasSuffix)
 }
 
 // FilterContains checks whether the completion.Text contains sub.
-func FilterContains(completions []Suggest, sub string, ignoreCase bool) []Suggest {
-	return filterSuggestions(completions, sub, ignoreCase, strings.Contains)
+func FilterContains(choices []Choice, sub string, ignoreCase bool) []Choice {
+	return filterChoiceions(choices, sub, ignoreCase, strings.Contains)
 }
 
 // FilterFuzzy checks whether the completion.Text fuzzy matches sub.
 // Fuzzy searching for "dog" is equivalent to "*d*o*g*". This search term
 // would match, for example, "Good food is gone"
 //                               ^  ^      ^
-func FilterFuzzy(completions []Suggest, sub string, ignoreCase bool) []Suggest {
-	return filterSuggestions(completions, sub, ignoreCase, fuzzyMatch)
+func FilterFuzzy(choices []Choice, sub string, ignoreCase bool) []Choice {
+	return filterChoiceions(choices, sub, ignoreCase, fuzzyMatch)
 }
 
 func fuzzyMatch(s, sub string) bool {
@@ -49,7 +49,7 @@ func fuzzyMatch(s, sub string) bool {
 	return true
 }
 
-func filterSuggestions(suggestions []Suggest, sub string, ignoreCase bool, function func(string, string) bool) []Suggest {
+func filterChoiceions(suggestions []Choice, sub string, ignoreCase bool, function func(string, string) bool) []Choice {
 	if sub == "" {
 		return suggestions
 	}
@@ -57,7 +57,7 @@ func filterSuggestions(suggestions []Suggest, sub string, ignoreCase bool, funct
 		sub = strings.ToUpper(sub)
 	}
 
-	ret := make([]Suggest, 0, len(suggestions))
+	ret := make([]Choice, 0, len(suggestions))
 	for i := range suggestions {
 		c := suggestions[i].Text
 		if ignoreCase {

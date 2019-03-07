@@ -30,34 +30,34 @@ type RenderColors struct {
 	prefixBG                Color
 	inputText               Color
 	inputBG                 Color
-	previewSuggestionText   Color
-	previewSuggestionBG     Color
 	suggestionText          Color
 	suggestionBG            Color
-	selectedSuggestionText  Color
-	selectedSuggestionBG    Color
 	descriptionText         Color
 	descriptionBG           Color
+	selectedSuggestionText  Color
+	selectedSuggestionBG    Color
 	selectedDescriptionText Color
 	selectedDescriptionBG   Color
+	previewSuggestionText   Color
+	previewSuggestionBG     Color
 	scrollbarThumb          Color
 	scrollbarBG             Color
 }
 
 var defaultColors = RenderColors{
 	prefixText:              DefaultColor,
-	previewSuggestionText:   White,
-	previewSuggestionBG:     DefaultColor,
 	suggestionText:          Black,
 	suggestionBG:            Gray,
+	descriptionText:         BrightBlack,
+	descriptionBG:           DefaultColor,
 	selectedSuggestionText:  White,
 	selectedSuggestionBG:    Blue,
-	descriptionText:         Black,
-	descriptionBG:           Yellow,
 	selectedDescriptionText: Gray,
-	selectedDescriptionBG:   Black,
-	scrollbarThumb:          Black,
-	scrollbarBG:             Gray,
+	selectedDescriptionBG:   DefaultColor,
+	previewSuggestionText:   White,
+	previewSuggestionBG:     DefaultColor,
+	scrollbarThumb:          BrightBlack,
+	scrollbarBG:             DefaultColor,
 }
 
 func NewRender(prefix string, w ConsoleWriter) *Render {

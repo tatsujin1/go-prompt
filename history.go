@@ -7,6 +7,15 @@ type History struct {
 	selected  int
 }
 
+// NewHistory returns new history object.
+func NewHistory() *History {
+	return &History{
+		histories: []string{},
+		tmp:       []string{""},
+		selected:  0,
+	}
+}
+
 // Add to add text in history.
 func (h *History) Add(input string) {
 	h.histories = append(h.histories, input)
@@ -25,7 +34,7 @@ func (h *History) Clear() {
 
 // Older saves a buffer of current line and get a buffer of previous line by up-arrow.
 // The changes of line buffers are stored until new history is created.
-func (h *History) Older(buf *Buffer) (new *Buffer, changed bool) {
+func (h *History) Previous(buf *Buffer) (new *Buffer, changed bool) {
 	if len(h.tmp) == 1 || h.selected == 0 {
 		return buf, false
 	}
@@ -39,7 +48,7 @@ func (h *History) Older(buf *Buffer) (new *Buffer, changed bool) {
 
 // Newer saves a buffer of current line and get a buffer of next line by up-arrow.
 // The changes of line buffers are stored until new history is created.
-func (h *History) Newer(buf *Buffer) (new *Buffer, changed bool) {
+func (h *History) Next(buf *Buffer) (new *Buffer, changed bool) {
 	if h.selected >= len(h.tmp)-1 {
 		return buf, false
 	}
@@ -49,13 +58,4 @@ func (h *History) Newer(buf *Buffer) (new *Buffer, changed bool) {
 	new = NewBuffer()
 	new.InsertText(h.tmp[h.selected], false, true)
 	return new, true
-}
-
-// NewHistory returns new history object.
-func NewHistory() *History {
-	return &History{
-		histories: []string{},
-		tmp:       []string{""},
-		selected:  0,
-	}
 }

@@ -153,8 +153,8 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 			if p.buf.Document().CursorPositionRow() > 0 {
 				fmt.Fprintln(os.Stderr, "line up")
 				p.buf.CursorUp(1)
-			} else if newBuf, changed := p.history.Older(p.buf); changed {
-				p.buf = newBuf
+			} else {
+				p.buf, _ = p.history.Previous(p.buf)
 			}
 		}
 	case Down, ControlN:
@@ -163,8 +163,8 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 			if p.buf.Document().CursorPositionRow()+1 < p.buf.Document().LineCount() {
 				fmt.Fprintln(os.Stderr, "line down")
 				p.buf.CursorDown(1)
-			} else if newBuf, changed := p.history.Newer(p.buf); changed {
-				p.buf = newBuf
+			} else {
+				p.buf, _ = p.history.Next(p.buf)
 			}
 			return
 		}

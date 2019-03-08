@@ -219,15 +219,15 @@ func (w *VT100Writer) SetTitle(title string) {
 		titleBytes = bytes.Replace(titleBytes, patterns[i].from, patterns[i].to, -1)
 	}
 
-	w.WriteRaw([]byte{0x1b, ']', '2', ';'})
+	w.WriteRawStr("\x1b]2;")
 	w.WriteRaw(titleBytes)
-	w.WriteRaw([]byte{0x07})
+	w.WriteRawStr("\x07")
 	return
 }
 
 // ClearTitle clears a title of terminal window.
 func (w *VT100Writer) ClearTitle() {
-	w.WriteRaw([]byte{0x1b, ']', '2', ';', 0x07})
+	w.WriteRawStr("\x1b]2;\x07")
 	return
 }
 
@@ -246,19 +246,16 @@ func (w *VT100Writer) SetColor(fg, bg Color, bold bool) {
 }
 
 // SetDisplayAttributes to set VT100 display attributes.
-var CSI []byte
-var end []byte
-var sep []byte
-
-func init() {
-	CSI = []byte{0x1b, '['} // control sequence introducer
-	end = []byte{'m'}
-	sep = []byte{';'}
-}
+const (
+	CSI         = "\x1b["
+	end         = "m"
+	sep         = ";"
+	trueColorFG = "38;2;"
+	trueColorBG = "48;2;"
+)
 
 func (w *VT100Writer) SetDisplayAttributes(fg, bg Color, attrs ...DisplayAttribute) {
-	w.WriteRaw(CSI)
-
+	w.WriteRawStr(CSI)
 
 	var ok bool
 	var v string
@@ -268,24 +265,41 @@ func (w *VT100Writer) SetDisplayAttributes(fg, bg Color, attrs ...DisplayAttribu
 			continue
 		}
 		w.WriteRawStr(v)
-		w.WriteRaw(sep)
+		w.WriteRawStr(sep)
+	}
+
+	if fg == nil {
+		fg = DefaultColor
+	}
+	if bg == nil {
+		bg = DefaultColor
 	}
 
 	// foreground color
-	if v, ok = foregroundANSIColors[fg]; !ok {
-		v = foregroundANSIColors[DefaultColor]
+	if tfg, ok := fg.(RGBColor); ok {
+		w.WriteRawStr(trueColorFG)
+		w.WriteRawStr(tfg.Code)
+	} else {
+		if v, ok = foregroundANSIColors[fg.(AnsiColor)]; !ok {
+			v = foregroundANSIColors[DefaultColor]
+		}
+		w.WriteRawStr(v)
 	}
-	w.WriteRawStr(v)
 
-	w.WriteRaw(sep)
+	w.WriteRawStr(sep)
 
 	// background color
-	if v, ok = backgroundANSIColors[bg]; !ok {
-		v = backgroundANSIColors[DefaultColor]
+	if tbg, ok := bg.(RGBColor); ok {
+		w.WriteRawStr(trueColorBG)
+		w.WriteRawStr(tbg.Code)
+	} else {
+		if v, ok = backgroundANSIColors[bg.(AnsiColor)]; !ok {
+			v = backgroundANSIColors[DefaultColor]
+		}
+		w.WriteRawStr(v)
 	}
-	w.WriteRawStr(v)
 
-	w.WriteRaw(end)
+	w.WriteRawStr(end)
 
 	return
 }

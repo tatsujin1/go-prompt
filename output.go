@@ -1,6 +1,7 @@
 package prompt
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -62,45 +63,38 @@ const (
 )
 
 // Color represents color on terminal.
-type Color int
+//type Color int
+type Color interface {
+	IsTrueColor() bool // just to avoid the interface being empty
+}
 
-// TODO: `Color` could be an interface with e.g. a `Code()`
-//   that returns the ANSI escape code sequence for that color/style.
-//   That would allow support for e.g. true color terminals.
-// this would entail that the below constants might become:
-//   Red = ANSICode{"31"}
-// and then a true color might be instantiated with:
-//   TrueColor(r, g, b)
-//
-//type FGBG bool
-//
-//const (
-//	FG FGBG = false
-//	BG FGBG = true
-//)
-//
-//type Coder interface {
-//	Code(fb FGBG) string
-//}
-//type ANSICode struct {
-//	fg_code string
-//	bg_code string
-//	code    string
-//}
-//
-//func (ac ANSICode) Code(fb FGBG) string {
-//	if fb == BG {
-//		return ac.bg_code + ";" + ac.code
-//	}
-//	return ac.fg_code + ";" + ac.code
-//}
-//func TrueColor(r, g, b uint8) Coder {
-//	return ANSICode{"38", "48", fmt.Sprintf("2;%d;%d;%d", r, g, b)}
-//}
+type AnsiColor int
+
+func (AnsiColor) IsTrueColor() bool {
+	return false
+}
+
+type RGBColor struct {
+	Red, Green, Blue uint8
+	Code             string
+}
+
+func (RGBColor) IsTrueColor() bool {
+	return true
+}
+
+func NewRGB(r, g, b uint8) Color {
+	return RGBColor{
+		Red:   r,
+		Green: g,
+		Blue:  b,
+		Code:  fmt.Sprintf("%d;%d;%d", r, g, b),
+	}
+}
 
 const (
 	// DefaultColor represents a default color.
-	DefaultColor Color = iota
+	DefaultColor AnsiColor = iota
 
 	// Low intensity
 

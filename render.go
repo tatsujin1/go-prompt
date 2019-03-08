@@ -21,7 +21,8 @@ type Render struct {
 	previousCursor    Coord
 	previousLineCount int
 
-	Colors RenderColors
+	Colors             RenderColors
+	TrueColorSupported bool
 }
 
 type RenderColors struct {
@@ -29,8 +30,8 @@ type RenderColors struct {
 	prefixBG                Color
 	inputText               Color
 	inputBG                 Color
-	suggestionText          Color
-	suggestionBG            Color
+	choiceText              Color
+	choiceBG                Color
 	descriptionText         Color
 	descriptionBG           Color
 	selectedChoiceText      Color
@@ -43,24 +44,22 @@ type RenderColors struct {
 	scrollbarBG             Color
 }
 
+// these should only use ANSI colors
+// TODO: set unspecified ones to DefaultColor (must use reflect)
+//       and remove the check in SetDisplayAttributes
 var defaultColors = RenderColors{
-	prefixText:              DefaultColor,
-	suggestionText:          Black,
-	suggestionBG:            Gray,
+	choiceText:              Black,
+	choiceBG:                Gray,
 	descriptionText:         BrightBlack,
-	descriptionBG:           DefaultColor,
 	selectedChoiceText:      White,
 	selectedChoiceBG:        Blue,
 	selectedDescriptionText: Gray,
-	selectedDescriptionBG:   DefaultColor,
 	previewChoiceText:       White,
-	previewChoiceBG:         DefaultColor,
 	scrollbarThumb:          BrightBlack,
-	scrollbarBG:             DefaultColor,
 }
 
 func NewRender(prefix string, w ConsoleWriter) *Render {
-	return &Render{
+	r := &Render{
 		prefix: prefix,
 		out:    w,
 		Colors: defaultColors,
@@ -69,6 +68,22 @@ func NewRender(prefix string, w ConsoleWriter) *Render {
 
 		livePrefixCallback: func() (string, bool) { return "", false },
 	}
+
+	// https://gist.github.com/XVilka/8346728#detection
+	cterm := os.Getenv("COLORTERM")
+	if cterm == "truecolor" || cterm == "24bit" {
+		r.TrueColorSupported = true
+	}
+
+	return r
+}
+
+func (r *Render) ValidateColor(c Color) (Color, bool) {
+	if r.TrueColorSupported || !c.IsTrueColor() {
+		return c, true
+	}
+	// TODO: make fallback color?
+	return nil, false
 }
 
 // Setup to initialize console output.
@@ -301,7 +316,7 @@ func (r *Render) renderCompletion(buf *Buffer, compMgr *CompletionManager) {
 		if i == selected {
 			r.out.SetColor(r.Colors.selectedChoiceText, r.Colors.selectedChoiceBG, true)
 		} else {
-			r.out.SetColor(r.Colors.suggestionText, r.Colors.suggestionBG, false)
+			r.out.SetColor(r.Colors.choiceText, r.Colors.choiceBG, false)
 		}
 		r.out.WriteStr(formatted[i].Text)
 

@@ -63,7 +63,6 @@ const (
 )
 
 // Color represents color on terminal.
-//type Color int
 type Color interface {
 	IsTrueColor() bool // just to avoid the interface being empty
 }
@@ -163,8 +162,8 @@ type ConsoleWriter interface {
 	CursorDown(n int)
 	// CursorForward moves the cursor forward by 'n' columns; the default count is 1.
 	CursorForward(n int)
-	// CursorBackward moves the cursor backward by 'n' columns; the default count is 1.
-	CursorBackward(n int)
+	// CursorBack moves the cursor backward by 'n' columns; the default count is 1.
+	CursorBack(n int)
 	// AskForCPR asks for a cursor position report (CPR).
 	AskForCPR()
 	// SaveCursor saves current cursor position.

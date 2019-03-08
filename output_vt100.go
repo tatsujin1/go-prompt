@@ -139,7 +139,7 @@ func (w *VT100Writer) CursorForward(n int) {
 	if n == 0 {
 		return
 	} else if n < 0 {
-		w.CursorBackward(-n)
+		w.CursorBack(-n)
 		return
 	}
 	s := strconv.Itoa(n)
@@ -149,8 +149,8 @@ func (w *VT100Writer) CursorForward(n int) {
 	return
 }
 
-// CursorBackward moves the cursor backward by 'n' columns; the default count is 1.
-func (w *VT100Writer) CursorBackward(n int) {
+// CursorBack moves the cursor backward by 'n' columns; the default count is 1.
+func (w *VT100Writer) CursorBack(n int) {
 	if n == 0 {
 		return
 	} else if n < 0 {

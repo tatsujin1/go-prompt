@@ -116,7 +116,7 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 
 	// completion
 	completing := p.completion.Completing()
-	p.handleCompletionKeyBinding(key, completing)
+	key = p.handleCompletionKeyBinding(key, completing)
 
 	p.handleKeyBinding(key)
 
@@ -181,7 +181,7 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 	return
 }
 
-func (p *Prompt) handleCompletionKeyBinding(key KeyCode, completing bool) {
+func (p *Prompt) handleCompletionKeyBinding(key KeyCode, completing bool) KeyCode {
 	switch key {
 	case Down:
 		if completing { // only if already completing
@@ -202,10 +202,16 @@ func (p *Prompt) handleCompletionKeyBinding(key KeyCode, completing bool) {
 				p.buf.DeleteBeforeCursor(len([]rune(w)))
 			}
 			p.buf.InsertText(s.Text, false, true)
+
+			// if completion was accepted using Enter, that key shouldn't be handled when we return
+			if key == Enter {
+				key = Ignore
+			}
 		}
 
 		p.completion.Reset()
 	}
+	return key
 }
 
 func (p *Prompt) handleKeyBinding(key KeyCode) bool {

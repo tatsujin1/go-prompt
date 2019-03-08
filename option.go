@@ -56,6 +56,7 @@ func OptionLivePrefix(f func() (prefix string, useLivePrefix bool)) Option {
 // OptionPrefixTextColor change a text color of prefix string
 func OptionPrefixTextColor(x Color) Option {
 	return func(p *Prompt) error {
+		x, _ = p.renderer.ValidateColor(x)
 		p.renderer.Colors.prefixText = x
 		return nil
 	}
@@ -64,6 +65,7 @@ func OptionPrefixTextColor(x Color) Option {
 // OptionPrefixBackgroundColor to change a background color of prefix string
 func OptionPrefixBackgroundColor(x Color) Option {
 	return func(p *Prompt) error {
+		x, _ = p.renderer.ValidateColor(x)
 		p.renderer.Colors.prefixBG = x
 		return nil
 	}
@@ -72,6 +74,7 @@ func OptionPrefixBackgroundColor(x Color) Option {
 // OptionInputTextColor to change a color of text which is input by user
 func OptionInputTextColor(x Color) Option {
 	return func(p *Prompt) error {
+		x, _ = p.renderer.ValidateColor(x)
 		p.renderer.Colors.inputText = x
 		return nil
 	}
@@ -80,6 +83,7 @@ func OptionInputTextColor(x Color) Option {
 // OptionInputBGColor to change a color of background which is input by user
 func OptionInputBGColor(x Color) Option {
 	return func(p *Prompt) error {
+		x, _ = p.renderer.ValidateColor(x)
 		p.renderer.Colors.inputBG = x
 		return nil
 	}
@@ -88,6 +92,7 @@ func OptionInputBGColor(x Color) Option {
 // OptionPreviewChoiceTextColor to change a text color which is completed
 func OptionPreviewChoiceTextColor(x Color) Option {
 	return func(p *Prompt) error {
+		x, _ = p.renderer.ValidateColor(x)
 		p.renderer.Colors.previewChoiceText = x
 		return nil
 	}
@@ -96,6 +101,7 @@ func OptionPreviewChoiceTextColor(x Color) Option {
 // OptionPreviewChoiceBGColor to change a background color which is completed
 func OptionPreviewChoiceBGColor(x Color) Option {
 	return func(p *Prompt) error {
+		x, _ = p.renderer.ValidateColor(x)
 		p.renderer.Colors.previewChoiceBG = x
 		return nil
 	}
@@ -104,7 +110,8 @@ func OptionPreviewChoiceBGColor(x Color) Option {
 // OptionChoiceTextColor to change a text color in drop down suggestions.
 func OptionChoiceTextColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.Colors.suggestionText = x
+		x, _ = p.renderer.ValidateColor(x)
+		p.renderer.Colors.choiceText = x
 		return nil
 	}
 }
@@ -112,7 +119,8 @@ func OptionChoiceTextColor(x Color) Option {
 // OptionChoiceBGColor change a background color in drop down suggestions.
 func OptionChoiceBGColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.Colors.suggestionBG = x
+		x, _ = p.renderer.ValidateColor(x)
+		p.renderer.Colors.choiceBG = x
 		return nil
 	}
 }
@@ -120,6 +128,7 @@ func OptionChoiceBGColor(x Color) Option {
 // OptionSelectedChoiceTextColor to change a text color for completed text which is selected inside suggestions drop down box.
 func OptionSelectedChoiceTextColor(x Color) Option {
 	return func(p *Prompt) error {
+		x, _ = p.renderer.ValidateColor(x)
 		p.renderer.Colors.selectedChoiceText = x
 		return nil
 	}
@@ -128,6 +137,7 @@ func OptionSelectedChoiceTextColor(x Color) Option {
 // OptionSelectedChoiceBGColor to change a background color for completed text which is selected inside suggestions drop down box.
 func OptionSelectedChoiceBGColor(x Color) Option {
 	return func(p *Prompt) error {
+		x, _ = p.renderer.ValidateColor(x)
 		p.renderer.Colors.selectedChoiceBG = x
 		return nil
 	}
@@ -136,6 +146,7 @@ func OptionSelectedChoiceBGColor(x Color) Option {
 // OptionDescriptionTextColor to change a background color of description text in drop down suggestions.
 func OptionDescriptionTextColor(x Color) Option {
 	return func(p *Prompt) error {
+		x, _ = p.renderer.ValidateColor(x)
 		p.renderer.Colors.descriptionText = x
 		return nil
 	}
@@ -144,6 +155,7 @@ func OptionDescriptionTextColor(x Color) Option {
 // OptionDescriptionBGColor to change a background color of description text in drop down suggestions.
 func OptionDescriptionBGColor(x Color) Option {
 	return func(p *Prompt) error {
+		x, _ = p.renderer.ValidateColor(x)
 		p.renderer.Colors.descriptionBG = x
 		return nil
 	}
@@ -152,6 +164,7 @@ func OptionDescriptionBGColor(x Color) Option {
 // OptionSelectedDescriptionTextColor to change a text color of description which is selected inside suggestions drop down box.
 func OptionSelectedDescriptionTextColor(x Color) Option {
 	return func(p *Prompt) error {
+		x, _ = p.renderer.ValidateColor(x)
 		p.renderer.Colors.selectedDescriptionText = x
 		return nil
 	}
@@ -160,6 +173,7 @@ func OptionSelectedDescriptionTextColor(x Color) Option {
 // OptionSelectedDescriptionBGColor to change a background color of description which is selected inside suggestions drop down box.
 func OptionSelectedDescriptionBGColor(x Color) Option {
 	return func(p *Prompt) error {
+		x, _ = p.renderer.ValidateColor(x)
 		p.renderer.Colors.selectedDescriptionBG = x
 		return nil
 	}
@@ -168,6 +182,7 @@ func OptionSelectedDescriptionBGColor(x Color) Option {
 // OptionScrollbarThumbColor to change a thumb color on scrollbar.
 func OptionScrollbarThumbColor(x Color) Option {
 	return func(p *Prompt) error {
+		x, _ = p.renderer.ValidateColor(x)
 		p.renderer.Colors.scrollbarThumb = x
 		return nil
 	}
@@ -176,6 +191,7 @@ func OptionScrollbarThumbColor(x Color) Option {
 // OptionScrollbarBGColor to change a background color of scrollbar.
 func OptionScrollbarBGColor(x Color) Option {
 	return func(p *Prompt) error {
+		x, _ = p.renderer.ValidateColor(x)
 		p.renderer.Colors.scrollbarBG = x
 		return nil
 	}

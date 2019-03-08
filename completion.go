@@ -91,7 +91,6 @@ func (c *CompletionManager) Reset() {
 	c.selected = -1      // nothing selected
 	c.verticalScroll = 0 // scrolling at the top
 	c.Update(*NewDocument())
-	fmt.Fprintf(os.Stderr, "choices after reset: %v\n", c.choices)
 }
 
 // Update to update the choices.

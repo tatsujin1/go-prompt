@@ -16,6 +16,7 @@ type Event struct {
 	translatedKey KeyCode
 	endEdit       bool
 	eof           bool
+	termTitle     *string // nil meaning it's not been set
 }
 
 func NewKeyEvent(b *Buffer, k KeyCode) *Event {
@@ -59,4 +60,8 @@ func (e *Event) SetEndEdit() {
 
 func (e *Event) SetTranslatedKey(key KeyCode) {
 	e.translatedKey = key
+}
+
+func (e *Event) SetTitle(title string) {
+	e.termTitle = &title
 }

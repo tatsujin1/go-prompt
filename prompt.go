@@ -265,12 +265,19 @@ func (p *Prompt) handleControlSequenceBinding(cs ControlSequence) bool {
 func (p *Prompt) postEventHandling(ev *Event) {
 	if ev.endEdit {
 		p.buf.setEndEdit()
+		ev.endEdit = false
 	}
 	if ev.eof {
 		p.buf.setEOF()
+		ev.eof = false
 	}
 	if ev.translatedKey != Undefined {
 		p.buf.setTranslatedKey(ev.translatedKey)
+		ev.translatedKey = Undefined
+	}
+	if ev.termTitle != nil {
+		p.renderer.out.SetTitle(*ev.termTitle)
+		ev.termTitle = nil
 	}
 }
 

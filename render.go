@@ -209,13 +209,13 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 
 	r.renderCompletion(buffer, completion)
 
-	// if a completion suggestion is currently selected update the screen -- but NOT the editor content!
+	// if a completion choice is currently selected update the screen -- but NOT the editor content!
 	if choice, ok := completion.Selected(); ok {
 		// move to the beginning of the word being completed
 		completing_word := doc.GetWordBeforeCursorUntilSeparator(completion.wordSeparator)
 		editPoint = r.move(editPoint, Coord{-runewidth.StringWidth(completing_word), 0})
 
-		// write the suggestion, using the configured preview style
+		// write the choice, using the configured preview style
 		r.out.SetColor(r.Colors.previewChoiceText, r.Colors.previewChoiceBG, false)
 		r.out.WriteStr(choice.Text)
 		// move edit point to the end of the suggested word

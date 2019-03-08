@@ -150,7 +150,8 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 	case Up, ControlP:
 		if !completing { // Don't use p.completion.Completing() because it takes double operation when switch to selected=-1.
 			// if current edit is multi-line (and we're not on the first line), go up one line
-			if p.buf.Document().CursorPositionRow() > 0 {
+			doc := p.buf.Document()
+			if doc.CursorPositionRow() > 0 {
 				fmt.Fprintln(os.Stderr, "line up")
 				p.buf.CursorUp(1)
 			} else {
@@ -160,7 +161,8 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 	case Down, ControlN:
 		if !completing { // Don't use p.completion.Completing() because it takes double operation when switch to selected=-1.
 			// if current edit is multi-line (and we're not on the last line), go down one line
-			if p.buf.Document().CursorPositionRow()+1 < p.buf.Document().LineCount() {
+			doc := p.buf.Document()
+			if !doc.CursorOnLastLine() && doc.LineCount() > 1 {
 				fmt.Fprintln(os.Stderr, "line down")
 				p.buf.CursorDown(1)
 			} else {

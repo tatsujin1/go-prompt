@@ -134,6 +134,8 @@ func main() {
 		completer,
 		prompt.OptionPrefix("⯈"),
 		prompt.OptionBindKey(prompt.KeyBind{prompt.Enter, e.on_end_line}),
+		prompt.OptionDescriptionBGColor(prompt.NewRGB(40, 25, 50)),
+		prompt.OptionDescriptionTextColor(prompt.NewRGB(110, 110, 60)),
 		//prompt.OptionBindKey(prompt.KeyBind{prompt.Tab, e.on_tab}),
 	)
 	os.Exit(p.Run())

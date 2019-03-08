@@ -85,50 +85,50 @@ func OptionInputBGColor(x Color) Option {
 	}
 }
 
-// OptionPreviewSuggestionTextColor to change a text color which is completed
-func OptionPreviewSuggestionTextColor(x Color) Option {
+// OptionPreviewChoiceTextColor to change a text color which is completed
+func OptionPreviewChoiceTextColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.Colors.previewSuggestionText = x
+		p.renderer.Colors.previewChoiceText = x
 		return nil
 	}
 }
 
-// OptionPreviewSuggestionBGColor to change a background color which is completed
-func OptionPreviewSuggestionBGColor(x Color) Option {
+// OptionPreviewChoiceBGColor to change a background color which is completed
+func OptionPreviewChoiceBGColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.Colors.previewSuggestionBG = x
+		p.renderer.Colors.previewChoiceBG = x
 		return nil
 	}
 }
 
-// OptionSuggestionTextColor to change a text color in drop down suggestions.
-func OptionSuggestionTextColor(x Color) Option {
+// OptionChoiceTextColor to change a text color in drop down suggestions.
+func OptionChoiceTextColor(x Color) Option {
 	return func(p *Prompt) error {
 		p.renderer.Colors.suggestionText = x
 		return nil
 	}
 }
 
-// OptionSuggestionBGColor change a background color in drop down suggestions.
-func OptionSuggestionBGColor(x Color) Option {
+// OptionChoiceBGColor change a background color in drop down suggestions.
+func OptionChoiceBGColor(x Color) Option {
 	return func(p *Prompt) error {
 		p.renderer.Colors.suggestionBG = x
 		return nil
 	}
 }
 
-// OptionSelectedSuggestionTextColor to change a text color for completed text which is selected inside suggestions drop down box.
-func OptionSelectedSuggestionTextColor(x Color) Option {
+// OptionSelectedChoiceTextColor to change a text color for completed text which is selected inside suggestions drop down box.
+func OptionSelectedChoiceTextColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.Colors.selectedSuggestionText = x
+		p.renderer.Colors.selectedChoiceText = x
 		return nil
 	}
 }
 
-// OptionSelectedSuggestionBGColor to change a background color for completed text which is selected inside suggestions drop down box.
-func OptionSelectedSuggestionBGColor(x Color) Option {
+// OptionSelectedChoiceBGColor to change a background color for completed text which is selected inside suggestions drop down box.
+func OptionSelectedChoiceBGColor(x Color) Option {
 	return func(p *Prompt) error {
-		p.renderer.Colors.selectedSuggestionBG = x
+		p.renderer.Colors.selectedChoiceBG = x
 		return nil
 	}
 }
@@ -181,10 +181,10 @@ func OptionScrollbarBGColor(x Color) Option {
 	}
 }
 
-// OptionMaxSuggestion specify the max number of displayed suggestions.
-func OptionMaxSuggestion(x uint16) Option {
+// OptionMaxVisibleChoices specify the max number of displayed completion choices.
+func OptionMaxVisibleChoices(x uint16) Option {
 	return func(p *Prompt) error {
-		p.completion.max = x
+		p.completion.maxVisibleChoices = int(x)
 		return nil
 	}
 }

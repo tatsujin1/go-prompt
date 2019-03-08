@@ -15,8 +15,8 @@ type Render struct {
 	prefix             string
 	livePrefixCallback func() (prefix string, useLivePrefix bool)
 	title              string
-	termHeight         uint16
-	termWidth          uint16
+	termHeight         int
+	termWidth          int
 
 	previousCursor    Coord
 	previousLineCount int
@@ -34,12 +34,12 @@ type RenderColors struct {
 	suggestionBG            Color
 	descriptionText         Color
 	descriptionBG           Color
-	selectedSuggestionText  Color
-	selectedSuggestionBG    Color
+	selectedChoiceText      Color
+	selectedChoiceBG        Color
 	selectedDescriptionText Color
 	selectedDescriptionBG   Color
-	previewSuggestionText   Color
-	previewSuggestionBG     Color
+	previewChoiceText       Color
+	previewChoiceBG         Color
 	scrollbarThumb          Color
 	scrollbarBG             Color
 }
@@ -50,12 +50,12 @@ var defaultColors = RenderColors{
 	suggestionBG:            Gray,
 	descriptionText:         BrightBlack,
 	descriptionBG:           DefaultColor,
-	selectedSuggestionText:  White,
-	selectedSuggestionBG:    Blue,
+	selectedChoiceText:      White,
+	selectedChoiceBG:        Blue,
 	selectedDescriptionText: Gray,
 	selectedDescriptionBG:   DefaultColor,
-	previewSuggestionText:   White,
-	previewSuggestionBG:     DefaultColor,
+	previewChoiceText:       White,
+	previewChoiceBG:         DefaultColor,
 	scrollbarThumb:          BrightBlack,
 	scrollbarBG:             DefaultColor,
 }
@@ -114,8 +114,8 @@ func (r *Render) prepareArea(lines int) {
 
 // UpdateWinSize called when window size is changed.
 func (r *Render) UpdateWinSize(ws *WinSize) {
-	r.termHeight = ws.Row
-	r.termWidth = ws.Col
+	r.termHeight = int(ws.Row)
+	r.termWidth = int(ws.Col)
 	return
 }
 
@@ -157,15 +157,15 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 	line := buffer.Text()
 	prefix := r.getCurrentPrefix()
 	// calculate future cursor position after prefix & line is printed
-	editPoint := doc.DisplayCursorCoordWithPrefix(int(r.termWidth), prefix)
+	editPoint := doc.DisplayCursorCoordWithPrefix(r.termWidth, prefix)
 	//dbg("editPoint @ %+v", editPoint)
 
 	// prepare area
 	y := lcount
 	//_, y := r.toCoord(cursor)
 
-	h := y + 1 + int(completion.max)
-	if h > int(r.termHeight) || completionMargin > int(r.termWidth) {
+	h := y + 1 + int(completion.MaxVisibleChoices())
+	if h > r.termHeight || completionMargin > r.termWidth {
 		r.renderWindowTooSmall()
 		// TODO: do some better fallback  (this will just spam-loop)
 		return
@@ -184,31 +184,28 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 	// render the complete prompt; prefix and editor content
 	r.renderPrefix()
 	r.out.SetColor(r.Colors.inputText, r.Colors.inputBG, false)
+	// TODO: add support for "continuation prefix"
 	r.out.WriteStr(line)
 	r.out.SetColor(DefaultColor, DefaultColor, false)
-	//r.lineWrap(cursor)
 	r.out.EraseDown()
 
 	// position the cursor at the edit point after the editor rendering
 	r.out.RestoreCursor()
-	r.moveRel(Coord{0, 0}, editPoint)
-	//cursor = r.backward(cursor, runewidth.StringWidth(line)-buffer.DisplayCursorPosition())
+	r.move(Coord{}, editPoint)
 
 	r.renderCompletion(buffer, completion)
 
 	// if a completion suggestion is currently selected update the screen -- but NOT the editor content!
-	/*if suggest, ok := completion.GetSelectedSuggestion(); ok {
+	if choice, ok := completion.Selected(); ok {
 		// move to the beginning of the word being completed
 		completing_word := doc.GetWordBeforeCursorUntilSeparator(completion.wordSeparator)
-		editPoint = r.moveRel(editPoint, Coord{-runewidth.StringWidth(completing_word), 0})
-		//cursor := r.backward(cursor, runewidth.StringWidth(buffer.Document().GetWordBeforeCursorUntilSeparator(completion.wordSeparator)))
+		editPoint = r.move(editPoint, Coord{-runewidth.StringWidth(completing_word), 0})
 
 		// write the suggestion, using the configured preview style
-		r.out.SetColor(r.Colors.previewSuggestionText, r.Colors.previewSuggestionBG, false)
-		r.out.WriteStr(suggest.Text)
-		//cursor += runewidth.StringWidth(suggest.Text)
+		r.out.SetColor(r.Colors.previewChoiceText, r.Colors.previewChoiceBG, false)
+		r.out.WriteStr(choice.Text)
 		// move edit point to the end of the suggested word
-		editPoint.X += runewidth.StringWidth(suggest.Text)
+		editPoint.X += runewidth.StringWidth(choice.Text)
 		r.out.SaveCursor()
 
 		// write the text following the cursor (using default style)
@@ -218,14 +215,14 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 		// total length of line
 		eol := editPoint.X + runewidth.StringWidth(rest)
 		// move cursor back to the edit point
-		//r.backward(cursor, runewidth.StringWidth(rest))
 		if r.lineWrap(eol) { // output LF if necessary
+			dbg("choice wrapped!\n")
 			r.out.RestoreCursor()
 			r.out.CursorUp(1)
 		} else {
 			r.out.RestoreCursor()
 		}
-	}*/
+	}
 	r.previousCursor = editPoint
 	r.previousLineCount = lcount
 }
@@ -234,7 +231,7 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 func (r *Render) BreakLine(buf *Buffer) {
 	// Erasing and Render
 	doc := buf.Document()
-	editPoint := doc.DisplayCursorCoordWithPrefix(int(r.termWidth), r.getCurrentPrefix())
+	editPoint := doc.DisplayCursorCoordWithPrefix(r.termWidth, r.getCurrentPrefix())
 	r.promptHome(editPoint)
 	r.out.EraseDown()
 
@@ -249,37 +246,45 @@ func (r *Render) BreakLine(buf *Buffer) {
 }
 
 const scrollbarWidth = 1
+const safetyMargin = 1
 
-func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
-	choices := completions.Choices()
-	if len(choices) == 0 {
+func (r *Render) renderCompletion(buf *Buffer, compMgr *CompletionManager) {
+	if compMgr.NumChoices() == 0 {
 		return
 	}
-	prefix := r.getCurrentPrefix()
-	formatted, width := formatChoices(
-		choices,
-		int(r.termWidth)-runewidth.StringWidth(prefix)-scrollbarWidth,
-	)
-	// +1 means a width of scrollbar.
-	width++
+	editPoint := buf.Document().DisplayCursorCoordWithPrefix(r.termWidth, r.getCurrentPrefix())
+
+	widthLimit := r.termWidth - editPoint.X - scrollbarWidth - safetyMargin
+
+	formatted, width, withDesc := compMgr.FormatChoices(widthLimit, r.termWidth)
+	width += scrollbarWidth
+	dbg("completion width: %d", width)
 
 	windowHeight := len(formatted)
-	if windowHeight > int(completions.max) {
-		windowHeight = int(completions.max)
+	if windowHeight > int(compMgr.MaxVisibleChoices()) {
+		windowHeight = int(compMgr.MaxVisibleChoices())
 	}
-	formatted = formatted[completions.verticalScroll : completions.verticalScroll+windowHeight]
+
+	cursorMoved := 0
+
+	if width < 40 || editPoint.X+width >= r.termWidth {
+		cursorMoved = -editPoint.X + 10 // say, at column 10 :)
+		dbg("too narrow, using fallback position")
+		r.move(Coord{}, Coord{cursorMoved, 0})
+		// re-format the choices, we now have more space
+		widthLimit = r.termWidth - (editPoint.X - cursorMoved) - scrollbarWidth - safetyMargin
+		formatted, width, withDesc = compMgr.FormatChoices(widthLimit, r.termWidth)
+		width += scrollbarWidth
+		dbg("completion width: %d", width)
+	}
+
+	formatted = formatted[compMgr.verticalScroll : compMgr.verticalScroll+windowHeight]
 	r.prepareArea(windowHeight)
 
-	cursor := runewidth.StringWidth(prefix) + runewidth.StringWidth(buf.Document().TextBeforeCursor())
-	c := r.toCoord(cursor)
-	if c.X+width >= int(r.termWidth) {
-		cursor = r.backward(cursor, c.X+width-int(r.termWidth))
-	}
-
 	// compute scrollbar parameters
-	contentHeight := len(choices)
+	contentHeight := compMgr.NumChoices()
 	fractionVisible := float64(windowHeight) / float64(contentHeight)
-	fractionAbove := float64(completions.verticalScroll) / float64(contentHeight)
+	fractionAbove := float64(compMgr.verticalScroll) / float64(contentHeight)
 
 	scrollbarHeight := int(clamp(float64(windowHeight), 1, float64(windowHeight)*fractionVisible))
 	scrollbarTop := int(float64(windowHeight) * fractionAbove)
@@ -288,94 +293,64 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 		return scrollbarTop <= row && row <= scrollbarTop+scrollbarHeight
 	}
 
-	selected := completions.selected - completions.verticalScroll
-	//r.out.SetColor(White, Cyan, false)
+	selected := compMgr.selected - compMgr.verticalScroll
 
 	for i := 0; i < windowHeight; i++ {
 		r.out.CursorDown(1)
 
-		// draw suggested word
+		// draw choice text
 		if i == selected {
-			r.out.SetColor(r.Colors.selectedSuggestionText, r.Colors.selectedSuggestionBG, true)
+			r.out.SetColor(r.Colors.selectedChoiceText, r.Colors.selectedChoiceBG, true)
 		} else {
 			r.out.SetColor(r.Colors.suggestionText, r.Colors.suggestionBG, false)
 		}
 		r.out.WriteStr(formatted[i].Text)
 
-		// draw description of suggestion
-		if i == selected {
-			r.out.SetColor(r.Colors.selectedDescriptionText, r.Colors.selectedDescriptionBG, false)
-		} else {
-			r.out.SetColor(r.Colors.descriptionText, r.Colors.descriptionBG, false)
+		if withDesc { // might be skipped if we don't have space
+			// draw choice description
+			if i == selected {
+				r.out.SetColor(r.Colors.selectedDescriptionText, r.Colors.selectedDescriptionBG, false)
+			} else {
+				r.out.SetColor(r.Colors.descriptionText, r.Colors.descriptionBG, false)
+			}
+			r.out.WriteStr(formatted[i].Description)
 		}
-		r.out.WriteStr(formatted[i].Description)
 
 		if isScrollThumb(i) {
 			r.out.SetColor(DefaultColor, r.Colors.scrollbarThumb, false)
 		} else {
 			r.out.SetColor(DefaultColor, r.Colors.scrollbarBG, false)
 		}
-		r.out.WriteStr(" ")
 		r.out.SetColor(DefaultColor, DefaultColor, false)
 
-		//r.lineWrap(cursor + width)
-		r.moveRel(Coord{}, Coord{-width, 0})
-		//r.backward(cursor+width, width)
+		r.move(Coord{}, Coord{-width + 1, 0})
 	}
 
-	if c.X+width >= int(r.termWidth) {
-		r.out.CursorForward(c.X + width - int(r.termWidth))
-	}
+	// move back to edit point (use RestoreCursor?)
+	r.move(Coord{}, Coord{-cursorMoved, -windowHeight})
 
-	r.out.CursorUp(windowHeight)
 	r.out.SetColor(DefaultColor, DefaultColor, false)
 	return
 }
 
-// backward moves cursor to backward from a current cursor position
-// regardless there is a line break.
-func (r *Render) backward(from, n int) int {
-	return r.move(from, from-n)
-}
-
-// move moves cursor to specified position from the beginning of input
-// even if there is a line break.
-func (r *Render) move(from, to int) int {
-	fromC := r.toCoord(from)
-	toC := r.toCoord(to)
-
-	delta := coord_sub(toC, fromC)
-	dbg("move: %+v", delta)
-
-	r.out.CursorUp(delta.Y)
-	r.out.CursorBackward(delta.X)
-	return to
-}
-
-// moveRel moves the cursor 'from' coord in the 'rel' direction (right & down).
+// move moves the cursor in the 'rel' direction (right & down).
 //   if 'rel' values are negative it moves in the oppositve direction
 // returns 'from' + 'rel'
-func (r *Render) moveRel(from, rel Coord) Coord {
-	dbg("moveCoord: %+v + %+v", from, rel)
+func (r *Render) move(from, rel Coord) Coord {
+	//dbg("move: %+v", rel)
 	r.out.CursorDown(rel.Y)
 	r.out.CursorForward(rel.X)
 	return coord_add(from, rel)
 }
 
 func (r *Render) promptHome(from Coord) {
-	dbg("promptHome: %+v", from)
-	r.out.CursorUp(from.Y)
-	r.out.CursorBackward(from.X)
+	//dbg("promptHome: %+v", from)
+	r.move(Coord{}, Coord{-from.X, -from.Y})
 }
 
 // coord_add returns a + b
 func coord_add(a, b Coord) Coord {
 	return Coord{a.X + b.X, a.Y + b.Y}
-}
-
-// coord_sub returns a - b
-func coord_sub(a, b Coord) Coord {
-	return Coord{a.X - b.X, a.Y - b.Y}
 }
 
 // toCoord returns the relative position from the beginning of the string.
@@ -385,7 +360,7 @@ func (r *Render) toCoord(cursor int) Coord {
 }
 
 func (r *Render) lineWrap(cursor int) bool {
-	if runtime.GOOS != "windows" && cursor > 0 && cursor%int(r.termWidth) == 0 {
+	if runtime.GOOS != "windows" && cursor > 0 && cursor%r.termWidth == 0 {
 		r.out.WriteRaw([]byte{'\n'})
 		return true
 	}

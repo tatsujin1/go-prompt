@@ -1,6 +1,8 @@
 package prompt
 
 import (
+	"fmt"
+	"os"
 	"strings"
 
 	"github.com/c-bata/go-prompt/internal/debug"
@@ -21,30 +23,42 @@ var (
 	completionMargin = textMargin + descMargin
 )
 
+// CompletionManager manages which choice is now selected.
+type CompletionManager struct {
+	selected          int // -1 means nothing is selected.
+	choices           []Choice
+	maxVisibleChoices int
+	useDescriptions   bool
+	completer         Completer
+
+	verticalScroll int
+	wordSeparator  string
+	showAtStart    bool
+
+	formatCache *formattedChoices
+}
+
 // Choice is printed when completing.
 type Choice struct {
 	Text        string
 	Description string
 }
 
-// CompletionManager manages which choice is now selected.
-type CompletionManager struct {
-	selected  int // -1 means nothing is selected.
-	choices   []Choice
-	max       uint16
-	completer Completer
-
-	verticalScroll int
-	wordSeparator  string
-	showAtStart    bool
+type formattedChoices struct {
+	maxWidth   int
+	termWidth  int
+	formatted  []Choice
+	totalWidth int
+	useDesc    bool
 }
 
 // NewCompletionManager returns initialized CompletionManager object.
-func NewCompletionManager(completer Completer, max uint16) *CompletionManager {
+func NewCompletionManager(completer Completer, maxVisible uint16) *CompletionManager {
 	return &CompletionManager{
-		selected:  -1,
-		max:       max,
-		completer: completer,
+		selected:          -1,
+		maxVisibleChoices: int(maxVisible),
+		useDescriptions:   true,
+		completer:         completer,
 
 		verticalScroll: 0,
 	}
@@ -62,6 +76,11 @@ func (c *CompletionManager) Selected() (s Choice, ok bool) {
 	return c.choices[c.selected], true
 }
 
+// NumChoices returns the number of choices.
+func (c *CompletionManager) NumChoices() int {
+	return len(c.choices)
+}
+
 // Choices returns the list of choices.
 func (c *CompletionManager) Choices() []Choice {
 	return c.choices
@@ -72,7 +91,7 @@ func (c *CompletionManager) Reset() {
 	c.selected = -1      // nothing selected
 	c.verticalScroll = 0 // scrolling at the top
 	c.Update(*NewDocument())
-	return
+	fmt.Fprintf(os.Stderr, "choices after reset: %v\n", c.choices)
 }
 
 // Update to update the choices.
@@ -84,27 +103,28 @@ func (c *CompletionManager) Update(in Document) {
 		choice.Description = deleteBreakLineCharacters(choice.Description)
 		c.choices[idx] = choice
 	}
-	return
 }
 
 // Next to select the next choice.
 func (c *CompletionManager) Next() {
-	if c.verticalScroll+int(c.max)-1 == c.selected {
+	// TODO: this scrolling handling should not be here,
+	//   but in a "completion view"-type-thingie
+	if c.verticalScroll+c.maxVisibleChoices-1 == c.selected {
 		c.verticalScroll++
 	}
 	c.selected++
 	c.update()
-	return
 }
 
 // Previous to select the previous choice.
 func (c *CompletionManager) Previous() {
+	// TODO: this scrolling handling should not be here,
+	//   but in a "completion view"-type-thingie
 	if c.verticalScroll == c.selected && c.selected > 0 {
 		c.verticalScroll--
 	}
 	c.selected--
 	c.update()
-	return
 }
 
 // Completing returns whether some suggestion is currently selected.
@@ -112,18 +132,96 @@ func (c *CompletionManager) Completing() bool {
 	return c.selected != -1
 }
 
+func (c *CompletionManager) MaxVisibleChoices() int {
+	return c.maxVisibleChoices
+}
+
 func (c *CompletionManager) update() {
-	max := int(c.max)
-	if len(c.choices) < max {
-		max = len(c.choices)
+	visible := c.maxVisibleChoices
+	if len(c.choices) < visible {
+		visible = len(c.choices)
 	}
 
 	if c.selected >= len(c.choices) {
 		c.Reset()
 	} else if c.selected < -1 {
 		c.selected = len(c.choices) - 1
-		c.verticalScroll = len(c.choices) - max
+		c.verticalScroll = len(c.choices) - visible
 	}
+}
+
+func (c *CompletionManager) FormatChoices(maxWidth, termWidth int) (formatted []Choice, totalWidth int, useDesc bool) {
+	// TODO: this formatting should not be here,
+	//   but in a "completion view"-type-thingie
+
+	if c.formatCache != nil &&
+		c.formatCache.maxWidth == maxWidth &&
+		c.formatCache.termWidth == termWidth {
+		return c.formatCache.formatted, c.formatCache.totalWidth, c.formatCache.useDesc
+	}
+	c.formatCache = nil
+
+	count := len(c.choices)
+
+	texts := make([]string, count)
+	descs := make([]string, count)
+	for idx, c := range c.choices {
+		texts[idx] = c.Text
+		descs[idx] = c.Description
+	}
+
+	useDesc = c.useDescriptions
+
+	var textWidth int
+	var descWidth int
+
+	textMaxWidth := maxWidth
+
+	if maxWidth < 20 {
+		if termWidth > 50 {
+			maxWidth = termWidth / 2
+			textMaxWidth = maxWidth / 2
+		} else {
+			// nah, this terminal is too narrow!
+			return
+		}
+	}
+
+	fmt.Fprintf(os.Stderr, "text column: (maxWidth: %d)\n", textMaxWidth)
+	texts, textWidth = formatTexts(texts, textMaxWidth, textPrefix, textSuffix)
+	if textWidth == 0 {
+		return
+	}
+
+	formatted = make([]Choice, count)
+	if useDesc {
+		remainWidth := maxWidth - textWidth
+		fmt.Fprintf(os.Stderr, "description column: (maxWidth: %d)\n", remainWidth)
+		descs, descWidth = formatTexts(descs, remainWidth, descPrefix, descSuffix)
+
+		useDesc = descWidth > 0
+	}
+
+	for idx := range texts {
+		var desc string
+		if useDesc {
+			desc = descs[idx]
+		}
+		formatted[idx] = Choice{
+			Text:        texts[idx],
+			Description: desc,
+		}
+	}
+	totalWidth = textWidth + descWidth
+
+	c.formatCache = &formattedChoices{
+		maxWidth:   maxWidth,
+		termWidth:  termWidth,
+		formatted:  formatted,
+		totalWidth: totalWidth,
+		useDesc:    useDesc,
+	}
+	return
 }
 
 func deleteBreakLineCharacters(s string) string {
@@ -137,67 +235,43 @@ func formatTexts(texts []string, maxWidth int, prefix, suffix string) (formatted
 	wSuffix := runewidth.StringWidth(suffix)
 	wEllipsis := runewidth.StringWidth(ellipsis)
 
-	min := wPrefix + wSuffix + wEllipsis
-	// find longest text
+	if wPrefix+wSuffix+wEllipsis >= maxWidth {
+		// we don't seem to have space for anything!?
+		return nil, 0
+	}
+
+	// find widest text
+	widest := 0
 	for _, text := range texts {
 		w := runewidth.StringWidth(text)
-		if w > totalWidth {
-			totalWidth = w
+		if w > widest {
+			widest = w
 		}
 	}
-
-	if totalWidth == 0 {
-		return nil, 0
-	}
-	if min >= maxWidth {
+	if widest == 0 {
 		return nil, 0
 	}
 
-	if wPrefix+totalWidth+wSuffix > maxWidth {
-		totalWidth = maxWidth - wPrefix - wSuffix
+	if wPrefix+widest+wSuffix > maxWidth {
+		// need to limit thew text idth
+		widest = maxWidth - wPrefix - wSuffix
 	}
+
+	widthLimit := widest
+	fmt.Fprintf(os.Stderr, "widthLimit: %d\n", widthLimit)
 
 	formatted = make([]string, len(texts))
 	for idx, text := range texts {
 		w := runewidth.StringWidth(text)
-		if w > totalWidth {
-			text = runewidth.Truncate(text, totalWidth, ellipsis)
+		if w > widthLimit {
+			text = runewidth.Truncate(text, widthLimit, ellipsis)
 			// runewidth.Truncate("您好xxx您好xxx", 11, "...") will "您好xxx..." (i.e. width 10),
-			// so we need recalculate the width (and pad it at the end)
-			w = runewidth.StringWidth(text)
+			// so we need to recalculate the width (and pad it at the end if necessary)
 		}
-		if w <= totalWidth {
-			text = runewidth.FillRight(text, totalWidth)
-		}
+		text = runewidth.FillRight(text, widthLimit)
+
 		formatted[idx] = prefix + text + suffix
+		//fmt.Fprintf(os.Stderr, "-'%s' (%d)\n", formatted[idx], runewidth.StringWidth(formatted[idx]))
 	}
-	return formatted, totalWidth
-}
-
-func formatChoices(choices []Choice, maxWidth int) (formatted []Choice, totalWidth int) {
-	count := len(choices)
-
-	texts := make([]string, count)
-	descs := make([]string, count)
-	for idx, c := range choices {
-		texts[idx] = c.Text
-		descs[idx] = c.Description
-	}
-
-	var textWidth int
-	var descWidth int
-
-	texts, textWidth = formatTexts(texts, maxWidth, textPrefix, textSuffix)
-	if textWidth == 0 {
-		return []Choice{}, 0
-	}
-	descs, descWidth = formatTexts(descs, maxWidth-textWidth, descPrefix, descSuffix)
-
-	formatted = make([]Choice, count)
-	for idx := range texts {
-		formatted[idx] = Choice{Text: texts[idx], Description: descs[idx]}
-	}
-	totalWidth = textWidth + descWidth
-
-	return
+	return formatted, widthLimit + wPrefix + wSuffix
 }

@@ -21,7 +21,6 @@ type Render struct {
 	previousCursor    Coord
 	previousLineCount int
 
-	// colors,
 	Colors RenderColors
 }
 
@@ -135,8 +134,8 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 
 	doc := buffer.Document()
 
-	// TODO: this should render into an off-screen 'buffer'.
-	//   this buffer would then be compared with the buffer rendered previously
+	// TODO: this should render into an off-screen buffer.
+	//   this buffer would then be compared with the previously rendered buffer
 	//   and generate actual output instructions from that.
 
 	defer func() { debug.AssertNoError(r.out.Flush()) }()
@@ -182,12 +181,12 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 	//   above the editor.
 
 	// render the complete prompt; prefix and editor content
+	r.out.EraseDown()
 	r.renderPrefix()
 	r.out.SetColor(r.Colors.inputText, r.Colors.inputBG, false)
 	// TODO: add support for "continuation prefix"
 	r.out.WriteStr(line)
 	r.out.SetColor(DefaultColor, DefaultColor, false)
-	r.out.EraseDown()
 
 	// position the cursor at the edit point after the editor rendering
 	r.out.RestoreCursor()

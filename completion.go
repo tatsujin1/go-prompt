@@ -115,7 +115,7 @@ func (c *CompletionManager) Update(in Document) {
 // Next to select the next choice.
 func (c *CompletionManager) Next() {
 	// TODO: this scrolling handling should not be here,
-	//   but in a "completion view"-type-thingie
+	//   but in a "completion view/renderer"-type-thingie
 	if c.verticalScroll+c.maxVisibleChoices-1 == c.selected {
 		c.verticalScroll++
 	}
@@ -126,7 +126,7 @@ func (c *CompletionManager) Next() {
 // Previous to select the previous choice.
 func (c *CompletionManager) Previous() {
 	// TODO: this scrolling handling should not be here,
-	//   but in a "completion view"-type-thingie
+	//   but in a "completion view/renderer"-type-thingie
 	if c.verticalScroll == c.selected && c.selected > 0 {
 		c.verticalScroll--
 	}
@@ -159,7 +159,7 @@ func (c *CompletionManager) update() {
 
 func (c *CompletionManager) FormatChoices(maxWidth, termWidth int) (formatted []Choice, totalWidth int, useDesc bool) {
 	// TODO: this formatting should not be here,
-	//   but in a "completion view"-type-thingie
+	//   but in a "completion view/renderer"-type-thingie
 
 	if c.formatCache != nil &&
 		c.formatCache.maxWidth == maxWidth &&

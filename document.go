@@ -21,10 +21,6 @@ type Document struct {
 	startIndexCache []int
 }
 
-type Coord struct {
-	X, Y int
-}
-
 // NewDocument return the new empty document.
 func NewDocument() *Document {
 	return &Document{

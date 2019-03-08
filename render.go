@@ -339,17 +339,12 @@ func (r *Render) move(from, rel Coord) Coord {
 	//dbg("move: %+v", rel)
 	r.out.CursorDown(rel.Y)
 	r.out.CursorForward(rel.X)
-	return coord_add(from, rel)
+	return from.Add(rel)
 }
 
 func (r *Render) promptHome(from Coord) {
 	//dbg("promptHome: %+v", from)
 	r.move(Coord{}, Coord{-from.X, -from.Y})
-}
-
-// coord_add returns a + b
-func coord_add(a, b Coord) Coord {
-	return Coord{a.X + b.X, a.Y + b.Y}
 }
 
 // toCoord returns the relative position from the beginning of the string.

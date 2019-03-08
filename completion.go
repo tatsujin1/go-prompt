@@ -28,7 +28,7 @@ type CompletionManager struct {
 	selected          int // -1 means nothing is selected.
 	choices           []Choice
 	maxVisibleChoices int
-	useDescriptions   bool
+	displayMode       DisplayMode
 	completer         Completer
 
 	verticalScroll int
@@ -52,12 +52,20 @@ type formattedChoices struct {
 	useDesc    bool
 }
 
+type DisplayMode int
+
+const (
+	SingleColumnDescription DisplayMode = iota
+	SingleColumn                        // always single column
+	MultiColumn                         // multi-column if possible
+)
+
 // NewCompletionManager returns initialized CompletionManager object.
 func NewCompletionManager(completer Completer, maxVisible uint16) *CompletionManager {
 	return &CompletionManager{
 		selected:          -1,
 		maxVisibleChoices: int(maxVisible),
-		useDescriptions:   true,
+		displayMode:       SingleColumnDescription,
 		completer:         completer,
 
 		verticalScroll: 0,
@@ -169,7 +177,7 @@ func (c *CompletionManager) FormatChoices(maxWidth, termWidth int) (formatted []
 		descs[idx] = c.Description
 	}
 
-	useDesc = c.useDescriptions
+	useDesc = c.displayMode == SingleColumnDescription
 
 	var textWidth int
 	var descWidth int

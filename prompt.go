@@ -114,7 +114,7 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 
 	p.buf.flags.translatedKey = Undefined
 
-	// completion
+	// are we already selecting a completion suggestion?
 	completing := p.completion.Completing()
 	key = p.handleCompletionKeyBinding(key, completing)
 

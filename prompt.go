@@ -39,7 +39,7 @@ func (p *Prompt) Run() (exitCode int) {
 	p.setUp()
 
 	if p.completion.showAtStart {
-		p.completion.Update(*p.buf.Document())
+		p.completion.Complete(*p.buf.Document())
 	}
 
 	p.renderer.Render(p.buf, p.completion)
@@ -80,7 +80,7 @@ func (p *Prompt) Run() (exitCode int) {
 				p.executor(exec.input)
 
 				if p.completion.showAtStart {
-					p.completion.Update(*p.buf.Document())
+					p.completion.Complete(*p.buf.Document())
 				}
 				p.renderer.Render(p.buf, p.completion)
 
@@ -89,7 +89,7 @@ func (p *Prompt) Run() (exitCode int) {
 				go p.readBuffer(bufCh, stopReadBufCh)
 				go p.handleSignals(exitCh, termSizeCh, stopHandleSignalCh)
 			} else {
-				p.completion.Update(*p.buf.Document())
+				p.completion.Complete(*p.buf.Document())
 				p.renderer.Render(p.buf, p.completion)
 			}
 		case w := <-termSizeCh:
@@ -291,7 +291,7 @@ func (p *Prompt) Input() string {
 	p.setUp()
 
 	if p.completion.showAtStart {
-		p.completion.Update(*p.buf.Document())
+		p.completion.Complete(*p.buf.Document())
 	}
 
 	p.renderer.Render(p.buf, p.completion)
@@ -314,7 +314,7 @@ func (p *Prompt) Input() string {
 				// Stop goroutine to run readBuffer function
 				return e.input
 			} else {
-				p.completion.Update(*p.buf.Document())
+				p.completion.Complete(*p.buf.Document())
 				p.renderer.Render(p.buf, p.completion)
 			}
 		default:

@@ -101,8 +101,8 @@ func (c *CompletionManager) Reset() {
 	c.Update(*NewDocument())
 }
 
-// Update to update the choices.
-func (c *CompletionManager) Update(in Document) {
+// Complete to generate a list of choices.
+func (c *CompletionManager) Complete(in Document) {
 	c.choices = c.completer(in)
 
 	for idx, choice := range c.choices {

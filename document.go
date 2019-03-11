@@ -53,14 +53,6 @@ func (d *Document) DisplayCursorCoordWithPrefix(termWidth int, prefix string) Co
 func display_coord(termWidth int, cursorPos int, useAll int, texts ...string) Coord {
 	// we're doing a little extra legwork here to avoid memory allocations
 
-	// TODO: Alternative implementation:
-	//   iterate from the cursor position and backwards to the beginning
-	//   RuneWidth() all runes up to the first encountered '\n' -> c.X
-	//   then just count the number of '\n' in the remainder -> c.Y
-	//   Advantage of this is far less calls to RuneWidth()
-
-	//fmt.Fprintf(os.Stderr, "\x1b[33mdisplay_coord: %v @ %d  (%d)\x1b[m\n", texts, cursorPos, termWidth)
-
 	c := Coord{}
 
 	idx := 0
@@ -83,13 +75,10 @@ func display_coord(termWidth int, cursorPos int, useAll int, texts ...string) Co
 				c.X += runewidth.RuneWidth(ch)
 			}
 		}
-		//fmt.Fprintf(os.Stderr, "\x1b[33m after '%s' (%d/%d) ==> %+v\x1b[m\n", t, tidx, useAll, c)
 	}
 	// line-wrap the last (i.e. non-terminated) line
 	c.Y += c.X / termWidth
 	c.X = c.X % termWidth
-
-	//fmt.Fprintf(os.Stderr, "\x1b[33m===> %+v\x1b[m\n", c)
 
 	return c
 }

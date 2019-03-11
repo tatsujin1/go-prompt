@@ -140,13 +140,14 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 
 		p.buf = NewBuffer()
 
+		// TODO: should add to history after the command has been successfully parsed!
 		if len(exec.input) > 0 {
 			p.history.Add(exec.input)
 		}
 	case ControlC:
 		p.renderer.BreakLine(p.buf)
 		p.buf = NewBuffer()
-		p.history.Clear()
+		p.history.ClearModified()
 	case Up, ControlP:
 		if !completing { // Don't use p.completion.Completing() because it takes double operation when switch to selected=-1.
 			// if current edit is multi-line (and we're not on the first line), go up one line

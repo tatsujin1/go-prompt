@@ -155,7 +155,7 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 				fmt.Fprintln(os.Stderr, "line up")
 				p.buf.CursorUp(1)
 			} else {
-				p.buf, _ = p.history.Previous(p.buf)
+				p.buf = p.history.Previous(p.buf)
 			}
 		}
 	case Down, ControlN:
@@ -166,7 +166,7 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 				fmt.Fprintln(os.Stderr, "line down")
 				p.buf.CursorDown(1)
 			} else {
-				p.buf, _ = p.history.Next(p.buf)
+				p.buf = p.history.Next(p.buf)
 			}
 			return
 		}

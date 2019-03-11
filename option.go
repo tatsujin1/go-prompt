@@ -1,5 +1,7 @@
 package prompt
 
+import "os"
+
 // Option is the type to replace default parameters.
 // prompt.New accepts any number of options (this is functional option pattern).
 type Option func(prompt *Prompt) error
@@ -208,9 +210,19 @@ func OptionMaxVisibleChoices(x uint16) Option {
 // OptionHistory to set history expressed by string array.
 func OptionHistory(x []string) Option {
 	return func(p *Prompt) error {
-		p.history.histories = x
-		p.history.Clear()
+		p.history.AddMany(x)
 		return nil
+	}
+}
+
+func OptionHistoryLoad(filename string) Option {
+	return func(p *Prompt) error {
+		if fp, err := os.Open(filename); err != nil {
+			_, err = p.history.Load(fp)
+		} else {
+			return err
+		}
+		return nil // will never get here, just exists to shut compiler up
 	}
 }
 

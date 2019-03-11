@@ -102,7 +102,7 @@ func (c *CompletionManager) Reset() {
 }
 
 // Complete to generate a list of choices.
-func (c *CompletionManager) Complete(in Document) {
+func (c *CompletionManager) FindCompletions(in Document) {
 	c.choices = c.completer(in)
 
 	for idx, choice := range c.choices {

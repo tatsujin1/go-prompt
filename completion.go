@@ -1,8 +1,6 @@
 package prompt
 
 import (
-	"fmt"
-	"os"
 	"strings"
 
 	"github.com/c-bata/go-prompt/internal/debug"
@@ -98,7 +96,7 @@ func (c *CompletionManager) Choices() []Choice {
 func (c *CompletionManager) Reset() {
 	c.selected = -1      // nothing selected
 	c.verticalScroll = 0 // scrolling at the top
-	c.Update(*NewDocument())
+	c.choices = nil
 }
 
 // Complete to generate a list of choices.
@@ -194,7 +192,7 @@ func (c *CompletionManager) FormatChoices(maxWidth, termWidth int) (formatted []
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "text column: (maxWidth: %d)\n", textMaxWidth)
+	//fmt.Fprintf(os.Stderr, "text column: (maxWidth: %d)\n", textMaxWidth)
 	texts, textWidth = formatTexts(texts, textMaxWidth, textPrefix, textSuffix)
 	if textWidth == 0 {
 		return
@@ -203,7 +201,7 @@ func (c *CompletionManager) FormatChoices(maxWidth, termWidth int) (formatted []
 	formatted = make([]Choice, count)
 	if useDesc {
 		remainWidth := maxWidth - textWidth
-		fmt.Fprintf(os.Stderr, "description column: (maxWidth: %d)\n", remainWidth)
+		//fmt.Fprintf(os.Stderr, "description column: (maxWidth: %d)\n", remainWidth)
 		descs, descWidth = formatTexts(descs, remainWidth, descPrefix, descSuffix)
 
 		useDesc = descWidth > 0
@@ -265,7 +263,7 @@ func formatTexts(texts []string, maxWidth int, prefix, suffix string) (formatted
 	}
 
 	widthLimit := widest
-	fmt.Fprintf(os.Stderr, "widthLimit: %d\n", widthLimit)
+	//fmt.Fprintf(os.Stderr, "widthLimit: %d\n", widthLimit)
 
 	formatted = make([]string, len(texts))
 	for idx, text := range texts {

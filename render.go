@@ -70,7 +70,6 @@ func NewRender(prefix string, w ConsoleWriter) *Render {
 		Colors: defaultColors,
 
 		previousLineCount:   1,
-		previousRenderLines: 1,
 
 		livePrefixCallback: func() (string, bool) { return "", false },
 
@@ -200,7 +199,7 @@ func (r *Render) render(buf *Buffer, compMgr *CompletionManager) {
 	r.out.RestoreCursor()
 	r.move(Coord{}, editPoint)
 
-	completionLines := r.renderCompletion(buf, compMgr)
+	r.renderCompletion(buf, compMgr)
 
 	// if a completion choice is currently selected, update the screen -- but NOT the editor content!
 	if choice, ok := compMgr.Selected(); ok {
@@ -233,7 +232,6 @@ func (r *Render) render(buf *Buffer, compMgr *CompletionManager) {
 
 	r.previousCursor = editPoint
 	r.previousLineCount = lcount
-	r.previousRenderLines = 1 + editPoint.Y + completionLines
 }
 
 // BreakLine to break line.
@@ -251,7 +249,6 @@ func (r *Render) BreakLine(buf *Buffer) {
 
 	r.previousCursor = Coord{}
 	r.previousLineCount = 1
-	r.previousRenderLines = 1
 }
 
 func (r *Render) OutputAsync(buf *Buffer, compMgr *CompletionManager, format string, a ...interface{}) {
@@ -262,9 +259,6 @@ func (r *Render) OutputAsync(buf *Buffer, compMgr *CompletionManager, format str
 
 		r.promptHome(r.previousCursor)
 		r.out.EraseDown()
-
-		r.out.WriteRawStr(strings.Repeat("\n", r.previousRenderLines))
-		r.promptHome(Coord{0, r.previousRenderLines})
 
 		text := fmt.Sprintf(format, a...)
 		r.out.SetColor(r.Colors.inputText, r.Colors.inputBG, false)

@@ -138,19 +138,22 @@ func dbg(m string, args ...interface{}) {
 // Render renders to the console.
 func (r *Render) Render(buffer *Buffer, compMgr *CompletionManager) {
 	r.outputLock.Lock()
-	defer r.outputLock.Unlock()
+	buffer.RLock()
 
 	r.render(buffer, compMgr)
+
+	buffer.RUnlock()
+	r.outputLock.Unlock()
 }
 
-func (r *Render) render(buffer *Buffer, compMgr *CompletionManager) {
+func (r *Render) render(buf *Buffer, compMgr *CompletionManager) {
 	// In situations where a pseudo tty is allocated (e.g. within a docker container),
 	// window size via TIOCGWINSZ is not immediately available and will result in 0,0 dimensions.
 	if r.termWidth == 0 {
 		return
 	}
 
-	doc := buffer.Document()
+	doc := buf.Document()
 
 	// TODO: this should render into an off-screen buffer.
 	//   this buffer would then be compared with the previously rendered buffer
@@ -180,7 +183,6 @@ func (r *Render) render(buffer *Buffer, compMgr *CompletionManager) {
 	h := lcount + 1 + int(compMgr.MaxVisibleChoices())
 	if h > r.termHeight || completionMargin > r.termWidth {
 		r.renderWindowTooSmall()
-		// TODO: do some better fallback  (this will just spam-loop)
 		return
 	}
 
@@ -198,7 +200,7 @@ func (r *Render) render(buffer *Buffer, compMgr *CompletionManager) {
 	r.out.RestoreCursor()
 	r.move(Coord{}, editPoint)
 
-	completionLines := r.renderCompletion(buffer, compMgr)
+	completionLines := r.renderCompletion(buf, compMgr)
 
 	// if a completion choice is currently selected, update the screen -- but NOT the editor content!
 	if choice, ok := compMgr.Selected(); ok {
@@ -215,7 +217,7 @@ func (r *Render) render(buffer *Buffer, compMgr *CompletionManager) {
 
 		// write the text following the cursor (using default style)
 		r.out.SetColor(DefaultColor, DefaultColor, false)
-		rest := buffer.Document().TextAfterCursor()
+		rest := buf.Document().TextAfterCursor()
 		r.out.WriteStr(rest)
 		// total length of line
 		eol := editPoint.X + runewidth.StringWidth(rest)
@@ -255,7 +257,6 @@ func (r *Render) BreakLine(buf *Buffer) {
 func (r *Render) OutputAsync(buf *Buffer, compMgr *CompletionManager, format string, a ...interface{}) {
 	go func() {
 		r.outputLock.Lock()
-		defer r.outputLock.Unlock()
 
 		r.out.SaveCursor()
 
@@ -277,7 +278,11 @@ func (r *Render) OutputAsync(buf *Buffer, compMgr *CompletionManager, format str
 		r.out.RestoreCursor()
 		r.out.CursorDown(outputLines)
 
+		buf.RLock()
 		r.render(buf, compMgr)
+		buf.RUnlock()
+
+		r.outputLock.Unlock()
 	}()
 }
 

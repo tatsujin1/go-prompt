@@ -313,7 +313,7 @@ func (r *Render) renderCompletion(buf *Buffer, compMgr *CompletionManager) int {
 
 	cursorMoved := 0
 
-	if width < 40 || editPoint.X+width >= r.termWidth {
+	if r.termWidth-editPoint.X < 40 || editPoint.X+width >= r.termWidth {
 		cursorMoved = -editPoint.X + 10 // say, at column 10 :)
 		dbg("too narrow, using fallback position")
 		r.move(Coord{}, Coord{cursorMoved, 0})

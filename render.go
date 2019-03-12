@@ -253,30 +253,32 @@ func (r *Render) BreakLine(buf *Buffer) {
 }
 
 func (r *Render) OutputAsync(buf *Buffer, compMgr *CompletionManager, format string, a ...interface{}) {
-	r.outputLock.Lock()
-	defer r.outputLock.Unlock()
+	go func() {
+		r.outputLock.Lock()
+		defer r.outputLock.Unlock()
 
-	r.out.SaveCursor()
+		r.out.SaveCursor()
 
-	r.promptHome(r.previousCursor)
-	r.out.EraseDown()
+		r.promptHome(r.previousCursor)
+		r.out.EraseDown()
 
-	r.out.WriteRawStr(strings.Repeat("\n", r.previousRenderLines))
-	r.promptHome(Coord{0, r.previousRenderLines})
+		r.out.WriteRawStr(strings.Repeat("\n", r.previousRenderLines))
+		r.promptHome(Coord{0, r.previousRenderLines})
 
-	text := fmt.Sprintf(format, a...)
-	r.out.SetColor(r.Colors.inputText, r.Colors.inputBG, false)
-	r.out.WriteRawStr(text)
-	// force LF
-	outputLines := strings.Count(text, "\n")
-	if text[len(text)-1] != '\n' {
-		r.out.WriteRawStr("\n")
-		outputLines++
-	}
-	r.out.RestoreCursor()
-	r.out.CursorDown(outputLines)
+		text := fmt.Sprintf(format, a...)
+		r.out.SetColor(r.Colors.inputText, r.Colors.inputBG, false)
+		r.out.WriteRawStr(text)
+		// force LF
+		outputLines := strings.Count(text, "\n")
+		if text[len(text)-1] != '\n' {
+			r.out.WriteRawStr("\n")
+			outputLines++
+		}
+		r.out.RestoreCursor()
+		r.out.CursorDown(outputLines)
 
-	r.render(buf, compMgr)
+		r.render(buf, compMgr)
+	}()
 }
 
 const scrollbarWidth = 1

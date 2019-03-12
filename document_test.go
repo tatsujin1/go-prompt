@@ -1243,7 +1243,7 @@ func TestDocument_CursorAtEndOfLine(t *testing.T) {
 				Text:           "line 1\nline 2\n",
 				cursorPosition: len("line 1\nli"),
 			},
-			expected: true,
+			expected: false,
 		},
 	}
 
@@ -1274,24 +1274,38 @@ func TestDocument_CursorPositionRowAndCol(t *testing.T) {
 		expectedCol int
 	}{
 		{
-			document:    &Document{Text: "line 1\nline 2\nline 3\n", cursorPosition: len("line 1\n" + "lin")},
+			document: &Document{
+				Text:           "single line",
+				cursorPosition: len("single "),
+			},
+			expectedRow: 0,
+			expectedCol: 7,
+		},
+		{
+			document: &Document{
+				Text:           "line 1\nline 2\nline 3\n",
+				cursorPosition: len("line 1\nlin"),
+			},
 			expectedRow: 1,
 			expectedCol: 3,
 		},
 		{
-			document:    &Document{Text: "", cursorPosition: 0},
+			document: &Document{
+				Text:           "",
+				cursorPosition: 0,
+			},
 			expectedRow: 0,
 			expectedCol: 0,
 		},
 	}
-	for _, test := range cursorPositionTests {
+	for idx, test := range cursorPositionTests {
 		ac := test.document.CursorPositionRow()
 		if ac != test.expectedRow {
-			t.Errorf("Expected %#v, got %#v", test.expectedRow, ac)
+			t.Errorf("[%d] Expected row %#v, got %#v", idx, test.expectedRow, ac)
 		}
 		ac = test.document.CursorPositionCol()
 		if ac != test.expectedCol {
-			t.Errorf("Expected %#v, got %#v", test.expectedCol, ac)
+			t.Errorf("[%d] Expected col %#v, got %#v", idx, test.expectedCol, ac)
 		}
 	}
 }
@@ -1391,23 +1405,49 @@ func TestDocument_LineCount(t *testing.T) {
 }
 
 func TestDocument_TranslateIndexToPosition(t *testing.T) {
-	d := &Document{
-		Text:           "line 1\nline 2\nline 3\nline 4\n",
-		cursorPosition: len("line 1\n" + "lin"),
+	var tests = []struct {
+		document    *Document
+		index       int
+		expectedRow int
+		expectedCol int
+	}{
+		{
+			document: &Document{
+				Text:           "line 1\nline 2\nline 3\nline 4\n",
+				cursorPosition: len("line 1\nlin"),
+			},
+			index:       len("line 1\nline 2\nlin"),
+			expectedRow: 2,
+			expectedCol: 3,
+		},
+		{
+			document: &Document{
+				Text:           "line 1\nline 2\nline 3\nline 4\n",
+				cursorPosition: len("line 1\nlin"),
+			},
+			index:       0,
+			expectedRow: 0,
+			expectedCol: 0,
+		},
+		{
+			document: &Document{
+				Text:           "こんにちは",
+				cursorPosition: 2,
+			},
+			index:       4,
+			expectedRow: 0,
+			expectedCol: 4,
+		},
 	}
-	row, col := d.TranslateIndexToPosition(len("line 1\nline 2\nlin"))
-	if row != 2 {
-		t.Errorf("Expected %#v, got %#v", 2, row)
-	}
-	if col != 3 {
-		t.Errorf("Expected %#v, got %#v", 3, col)
-	}
-	row, col = d.TranslateIndexToPosition(0)
-	if row != 0 {
-		t.Errorf("Expected %#v, got %#v", 0, row)
-	}
-	if col != 0 {
-		t.Errorf("Expected %#v, got %#v", 0, col)
+
+	for idx, test := range tests {
+		row, col := test.document.TranslateIndexToPosition(test.index)
+		if row != test.expectedRow {
+			t.Errorf("[%d] Expected row %#v, got %#v", idx, test.expectedRow, row)
+		}
+		if col != test.expectedCol {
+			t.Errorf("[%d] Expected col %#v, got %#v", idx, test.expectedCol, col)
+		}
 	}
 }
 

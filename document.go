@@ -4,9 +4,10 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/c-bata/go-prompt/internal/bisect"
 	istrings "github.com/c-bata/go-prompt/internal/strings"
 	runewidth "github.com/mattn/go-runewidth"
+
+	"github.com/c-bata/go-prompt/internal/bisect"
 )
 
 // Document is a read-only view of the current editor content
@@ -323,9 +324,6 @@ func (d *Document) CurrentLine() string {
 // Array pointing to the start indexes of all the lines.
 func (d *Document) lineStartIndexes() []int {
 	if d.startIndexCache == nil {
-		// TODO: Cache, because this is often reused.
-		// (If it is used, it's often used many times.
-		// And this has to be fast for editing big documents!)
 		lc := d.LineCount()
 		lengths := make([]int, lc)
 		for i, l := range d.Lines() {

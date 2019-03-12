@@ -323,6 +323,11 @@ func (p *Prompt) Input() string {
 	}
 }
 
+func (p *Prompt) OutputAsync(format string, a ...interface{}) {
+	// TODO: mutex protect p.buf
+	p.renderer.OutputAsync(p.buf, p.completion, format, a...)
+}
+
 func (p *Prompt) readBuffer(bufCh chan ControlSequence, stopCh chan struct{}) {
 	debug.Log("start reading buffer")
 	for {

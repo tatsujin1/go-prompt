@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	prompt "github.com/c-bata/go-prompt"
 )
@@ -135,8 +136,16 @@ func main() {
 		prompt.OptionPrefix("⯈"),
 		prompt.OptionBindKey(prompt.KeyBind{prompt.Enter, e.on_end_line}),
 		prompt.OptionDescriptionBGColor(prompt.NewRGB(40, 25, 50)),
-		prompt.OptionDescriptionTextColor(prompt.NewRGB(110, 110, 60)),
+		prompt.OptionDescriptionTextColor(prompt.NewRGB(120, 120, 40)),
 	)
+
+	go func() {
+		for {
+			time.Sleep(3 * time.Second)
+			fmt.Fprintln(os.Stderr, "async output!")
+			p.OutputAsync("asynchronously text output  %v\n", time.Now().Format(time.RFC3339))
+		}
+	}()
 
 	os.Exit(p.Run())
 }

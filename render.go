@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
+	"sync"
 
 	"github.com/c-bata/go-prompt/internal/debug"
 	runewidth "github.com/mattn/go-runewidth"
@@ -18,11 +20,14 @@ type Render struct {
 	termHeight         int
 	termWidth          int
 
-	previousCursor    Coord
-	previousLineCount int
+	previousCursor      Coord
+	previousLineCount   int
+	previousRenderLines int
 
 	Colors             RenderColors
 	TrueColorSupported bool
+
+	outputLock *sync.Mutex
 }
 
 type RenderColors struct {
@@ -64,9 +69,12 @@ func NewRender(prefix string, w ConsoleWriter) *Render {
 		out:    w,
 		Colors: defaultColors,
 
-		previousLineCount: 1,
+		previousLineCount:   1,
+		previousRenderLines: 1,
 
 		livePrefixCallback: func() (string, bool) { return "", false },
+
+		outputLock: &sync.Mutex{},
 	}
 
 	// https://gist.github.com/XVilka/8346728#detection
@@ -94,23 +102,11 @@ func (r *Render) Setup() {
 	}
 }
 
-// getCurrentPrefix to get current prefix.
-// If live-prefix is enabled, return live-prefix.
-func (r *Render) getCurrentPrefix() string {
-	if prefix, ok := r.livePrefixCallback(); ok {
-		return prefix
-	}
-	return r.prefix
-}
-
-func (r *Render) renderPrefix() {
-	r.out.SetColor(r.Colors.prefixText, r.Colors.prefixBG, false)
-	r.out.WriteStr(r.getCurrentPrefix())
-	r.out.SetColor(DefaultColor, DefaultColor, false)
-}
-
 // TearDown to clear title and erasing.
 func (r *Render) TearDown() {
+	r.outputLock.Lock()
+	defer r.outputLock.Unlock()
+
 	r.out.ClearTitle()
 	r.out.EraseDown()
 	debug.AssertNoError(r.out.Flush())
@@ -140,7 +136,14 @@ func dbg(m string, args ...interface{}) {
 }
 
 // Render renders to the console.
-func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
+func (r *Render) Render(buffer *Buffer, compMgr *CompletionManager) {
+	r.outputLock.Lock()
+	defer r.outputLock.Unlock()
+
+	r.render(buffer, compMgr)
+}
+
+func (r *Render) render(buffer *Buffer, compMgr *CompletionManager) {
 	// In situations where a pseudo tty is allocated (e.g. within a docker container),
 	// window size via TIOCGWINSZ is not immediately available and will result in 0,0 dimensions.
 	if r.termWidth == 0 {
@@ -151,7 +154,7 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 
 	// TODO: this should render into an off-screen buffer.
 	//   this buffer would then be compared with the previously rendered buffer
-	//   and generate actual output instructions from that.
+	//   and generate actual output instructions from that diff.
 
 	defer func() { debug.AssertNoError(r.out.Flush()) }()
 	//dbg("------------------------- RENDER")
@@ -164,21 +167,17 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 		added = 1
 		//dbg("added LF  (%d -> %d)", r.previousLineCount, doc.LineCount())
 	}
-	// move to beginning of the current prompt
 
+	// move to beginning of the current prompt
 	r.promptHome(Coord{r.previousCursor.X, r.previousCursor.Y + added})
 
-	line := buffer.Text()
 	prefix := r.getCurrentPrefix()
 	// calculate future cursor position after prefix & line is printed
 	editPoint := doc.DisplayCursorCoordWithPrefix(r.termWidth, prefix)
 	//dbg("editPoint @ %+v", editPoint)
 
 	// prepare area
-	y := lcount
-	//_, y := r.toCoord(cursor)
-
-	h := y + 1 + int(completion.MaxVisibleChoices())
+	h := lcount + 1 + int(compMgr.MaxVisibleChoices())
 	if h > r.termHeight || completionMargin > r.termWidth {
 		r.renderWindowTooSmall()
 		// TODO: do some better fallback  (this will just spam-loop)
@@ -191,28 +190,20 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 
 	r.out.SaveCursor()
 
-	// TODO: remember the total height (number of lines) we rendered last
-	//   this will come in handy when we want to output asynchronous stuff
-	//   above the editor.
-
 	// render the complete prompt; prefix and editor content
 	r.out.EraseDown()
-	r.renderPrefix()
-	r.out.SetColor(r.Colors.inputText, r.Colors.inputBG, false)
-	// TODO: add support for "continuation prefix"
-	r.out.WriteStr(line)
-	r.out.SetColor(DefaultColor, DefaultColor, false)
+	r.renderPrompt(doc, false)
 
-	// position the cursor at the edit point after the editor rendering
+	// position the cursor at the edit point after the rendering
 	r.out.RestoreCursor()
 	r.move(Coord{}, editPoint)
 
-	r.renderCompletion(buffer, completion)
+	completionLines := r.renderCompletion(buffer, compMgr)
 
-	// if a completion choice is currently selected update the screen -- but NOT the editor content!
-	if choice, ok := completion.Selected(); ok {
+	// if a completion choice is currently selected, update the screen -- but NOT the editor content!
+	if choice, ok := compMgr.Selected(); ok {
 		// move to the beginning of the word being completed
-		completing_word := doc.GetWordBeforeCursorUntilSeparator(completion.wordSeparator)
+		completing_word := doc.GetWordBeforeCursorUntilSeparator(compMgr.wordSeparator)
 		editPoint = r.move(editPoint, Coord{-runewidth.StringWidth(completing_word), 0})
 
 		// write the choice, using the configured preview style
@@ -237,34 +228,73 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 			r.out.RestoreCursor()
 		}
 	}
+
 	r.previousCursor = editPoint
 	r.previousLineCount = lcount
+	r.previousRenderLines = 1 + editPoint.Y + completionLines
 }
 
 // BreakLine to break line.
 func (r *Render) BreakLine(buf *Buffer) {
+	r.outputLock.Lock()
+	defer r.outputLock.Unlock()
+
 	// Erasing and Render
 	doc := buf.Document()
 	editPoint := doc.DisplayCursorCoordWithPrefix(r.termWidth, r.getCurrentPrefix())
 	r.promptHome(editPoint)
 	r.out.EraseDown()
-
-	r.renderPrefix()
-	r.out.SetColor(r.Colors.inputText, r.Colors.inputBG, false)
-	r.out.WriteStr(doc.Text + "\n")
-	r.out.SetColor(DefaultColor, DefaultColor, false)
+	r.renderPrompt(doc, true)
 	debug.AssertNoError(r.out.Flush())
 
 	r.previousCursor = Coord{}
 	r.previousLineCount = 1
+	r.previousRenderLines = 1
+}
+
+func (r *Render) OutputAsync(buf *Buffer, compMgr *CompletionManager, format string, a ...interface{}) {
+	r.outputLock.Lock()
+	defer r.outputLock.Unlock()
+
+	r.out.SaveCursor()
+
+	r.promptHome(r.previousCursor)
+	r.out.EraseDown()
+
+	r.out.WriteRawStr(strings.Repeat("\n", r.previousRenderLines))
+	r.promptHome(Coord{0, r.previousRenderLines})
+
+	text := fmt.Sprintf(format, a...)
+	r.out.SetColor(r.Colors.inputText, r.Colors.inputBG, false)
+	r.out.WriteRawStr(text)
+	// force LF
+	outputLines := strings.Count(text, "\n")
+	if text[len(text)-1] != '\n' {
+		r.out.WriteRawStr("\n")
+		outputLines++
+	}
+	r.out.RestoreCursor()
+	r.out.CursorDown(outputLines)
+
+	r.render(buf, compMgr)
 }
 
 const scrollbarWidth = 1
 const safetyMargin = 1
 
-func (r *Render) renderCompletion(buf *Buffer, compMgr *CompletionManager) {
+func (r *Render) renderPrompt(doc *Document, breakLine bool) {
+	r.renderPrefix()
+	r.out.SetColor(r.Colors.inputText, r.Colors.inputBG, false)
+	r.out.WriteStr(doc.Text)
+	if breakLine {
+		r.out.WriteRawStr("\n")
+	}
+	r.out.SetColor(DefaultColor, DefaultColor, false)
+}
+
+func (r *Render) renderCompletion(buf *Buffer, compMgr *CompletionManager) int {
 	if compMgr.NumChoices() == 0 {
-		return
+		return 0
 	}
 	editPoint := buf.Document().DisplayCursorCoordWithPrefix(r.termWidth, r.getCurrentPrefix())
 
@@ -272,7 +302,7 @@ func (r *Render) renderCompletion(buf *Buffer, compMgr *CompletionManager) {
 
 	formatted, width, withDesc := compMgr.FormatChoices(widthLimit, r.termWidth)
 	width += scrollbarWidth
-	dbg("completion width: %d", width)
+	//dbg("completion width: %d", width)
 
 	windowHeight := len(formatted)
 	if windowHeight > int(compMgr.MaxVisibleChoices()) {
@@ -344,7 +374,24 @@ func (r *Render) renderCompletion(buf *Buffer, compMgr *CompletionManager) {
 	r.move(Coord{}, Coord{-cursorMoved, -windowHeight})
 
 	r.out.SetColor(DefaultColor, DefaultColor, false)
-	return
+
+	return windowHeight
+}
+
+// getCurrentPrefix to get current prefix.
+// If live-prefix is enabled, return live-prefix.
+func (r *Render) getCurrentPrefix() string {
+	if prefix, ok := r.livePrefixCallback(); ok {
+		return prefix
+	}
+	return r.prefix
+}
+
+func (r *Render) renderPrefix() {
+	// TODO: should the prefix include style information?
+	r.out.SetColor(r.Colors.prefixText, r.Colors.prefixBG, false)
+	r.out.WriteRawStr(r.getCurrentPrefix())
+	r.out.SetColor(DefaultColor, DefaultColor, false)
 }
 
 // move moves the cursor in the 'rel' direction (right & down).

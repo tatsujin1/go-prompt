@@ -304,7 +304,6 @@ func (r *Render) renderCompletion(buf *Buffer, compMgr *CompletionManager) int {
 
 	formatted, width, withDesc := compMgr.FormatChoices(widthLimit, r.termWidth)
 	width += scrollbarWidth
-	//dbg("completion width: %d", width)
 
 	windowHeight := len(formatted)
 	if windowHeight > int(compMgr.MaxVisibleChoices()) {
@@ -315,13 +314,11 @@ func (r *Render) renderCompletion(buf *Buffer, compMgr *CompletionManager) int {
 
 	if r.termWidth-editPoint.X < 40 || editPoint.X+width >= r.termWidth {
 		cursorMoved = -editPoint.X + 10 // say, at column 10 :)
-		dbg("too narrow, using fallback position")
 		r.move(Coord{}, Coord{cursorMoved, 0})
 		// re-format the choices, we now have more space
 		widthLimit = r.termWidth - (editPoint.X - cursorMoved) - scrollbarWidth - safetyMargin
 		formatted, width, withDesc = compMgr.FormatChoices(widthLimit, r.termWidth)
 		width += scrollbarWidth
-		dbg("completion width: %d", width)
 	}
 
 	formatted = formatted[compMgr.verticalScroll : compMgr.verticalScroll+windowHeight]

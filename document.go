@@ -114,14 +114,6 @@ func (d *Document) textAfterCursor() []rune {
 	return d.text[d.cursor:]
 }
 
-// NOTE: these GetWord* functions does a lot of string/[]rune conversions
-//   to support proper (and consistent) handling of utf-8 strings.
-//   two for Find(Start|End)* and then two in these GetWord* functions...
-// TODO: reduce the number of conversions to a minimum.
-//   e.g. convert to []rune on creation of the document,
-//   then perform all operations in "rune space"
-//   and per operation, convert the output to string
-
 // GetWordBeforeCursor returns the word(part) before the cursor.
 // If we have whitespace before the cursor this returns an empty string.
 func (d *Document) GetWordBeforeCursor() string {

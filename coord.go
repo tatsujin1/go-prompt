@@ -1,7 +1,8 @@
 package prompt
 
 type Coord struct {
-	X, Y int
+	X Column
+	Y Row
 }
 
 func (c Coord) Add(b Coord) Coord {

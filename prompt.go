@@ -41,7 +41,6 @@ func (p *Prompt) Run() (exitCode int) {
 	if p.completion.showAtStart {
 		p.completion.FindCompletions(*p.buf.Document())
 	}
-
 	p.renderer.Render(p.buf, p.completion)
 
 	bufCh := make(chan ControlSequence, 128)
@@ -63,11 +62,14 @@ func (p *Prompt) Run() (exitCode int) {
 		select {
 		case cs := <-bufCh:
 			if shouldExit, exec := p.feed(cs); shouldExit {
+				fmt.Fprintln(os.Stderr, "EXIT")
 				p.renderer.BreakLine(p.buf)
 				stopReadBufCh <- struct{}{}
 				stopHandleSignalCh <- struct{}{}
 				return
 			} else if exec != nil {
+				fmt.Fprintln(os.Stderr, "EXECUTE")
+
 				// execute entered command-line
 
 				// Stop goroutine to run readBuffer function
@@ -117,6 +119,9 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 	// are we already selecting a completion suggestion?
 	completing := p.completion.Completing()
 	key = p.handleCompletionKeyBinding(key, completing)
+	if p.completion.Completing() {
+		fmt.Fprintln(os.Stderr, "\x1b[36mcompleting\x1b[m")
+	}
 
 	p.handleKeyBinding(key)
 
@@ -152,8 +157,7 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 		if !completing { // Don't use p.completion.Completing() because it takes double operation when switch to selected=-1.
 			// if current edit is multi-line (and we're not on the first line), go up one line
 			doc := p.buf.Document()
-			if doc.CursorPositionRow() > 0 {
-				fmt.Fprintln(os.Stderr, "line up")
+			if doc.CursorRow() > 0 {
 				p.buf.CursorUp(1)
 			} else {
 				p.buf = p.history.Previous(p.buf)
@@ -202,7 +206,7 @@ func (p *Prompt) handleCompletionKeyBinding(key KeyCode, completing bool) KeyCod
 		if s, ok := p.completion.Selected(); ok {
 			w := p.buf.Document().GetWordBeforeCursorUntilSeparator(p.completion.wordSeparator)
 			if w != "" {
-				p.buf.DeleteBeforeCursor(len([]rune(w)))
+				p.buf.DeleteBeforeCursor(Offset(len([]rune(w))))
 			}
 			p.buf.InsertText(s.Text, false, true)
 
@@ -227,14 +231,14 @@ func (p *Prompt) handleKeyBinding(key KeyCode) bool {
 
 	// Custom key bindings
 	if fn, ok := p.keyBindings[key]; ok {
-		fmt.Fprintf(os.Stderr, "executing custom key bind\n")
+		//fmt.Fprintf(os.Stderr, "executing custom key bind\n")
 		fn(ev)
 		handled = true
 	}
 
 	// "generic" key bindings
 	if fn, ok := commonKeyBindings[key]; ok {
-		fmt.Fprintf(os.Stderr, "executing common key bind\n")
+		///fmt.Fprintf(os.Stderr, "executing common key bind\n")
 		fn(ev)
 		handled = true
 	}
@@ -242,7 +246,7 @@ func (p *Prompt) handleKeyBinding(key KeyCode) bool {
 	// mode-specific key bindings
 	if p.editMode == EmacsMode {
 		if fn, ok := emacsKeyBindings[key]; ok {
-			fmt.Fprintf(os.Stderr, "executing emacs key bind\n")
+			//fmt.Fprintf(os.Stderr, "executing emacs key bind\n")
 			fn(ev)
 			handled = true
 		}

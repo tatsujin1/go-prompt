@@ -6,11 +6,11 @@ var clipboard string
 func end_of_line(buf *Buffer) {
 	doc := buf.Document()
 
-	rest_len := len([]rune(doc.CurrentLineAfterCursor()))
+	rest_len := doc.GetEndOfLineOffset() //len([]rune(doc.CurrentLineAfterCursor()))
 	if rest_len > 0 {
 		buf.CursorRight(rest_len)
 	} else if len(doc.TextAfterCursor()) > 0 {
-		buf.cursorPosition++
+		buf.CursorNext(1) // move past LF
 		end_of_line(buf)
 	}
 }
@@ -18,11 +18,11 @@ func end_of_line(buf *Buffer) {
 // beginning_of_line Go to the beginning of the line
 func beginning_of_line(buf *Buffer) {
 	doc := buf.Document()
-	lead_len := len([]rune(doc.CurrentLineBeforeCursor()))
+	lead_len := doc.CursorColumnIndex() // len([]rune(doc.CurrentLineBeforeCursor()))
 	if lead_len > 0 {
-		buf.CursorLeft(lead_len)
+		buf.CursorLeft(Offset(lead_len))
 	} else if len(doc.TextBeforeCursor()) > 0 {
-		buf.cursorPosition-- // move before '\n'
+		buf.CursorPrev(1) // move before LF
 		beginning_of_line(buf)
 	}
 }
@@ -35,7 +35,7 @@ func delete_char(buf *Buffer) {
 // delete_word Delete word after the cursor
 func delete_word(buf *Buffer) {
 	wend := buf.Document().FindEndOfCurrentWordWithSpace()
-	buf.Delete(wend)
+	buf.Delete(Offset(wend))
 }
 
 // backward_delete_char Go to Backspace
@@ -57,6 +57,7 @@ func backward_char(buf *Buffer) {
 func forward_word(buf *Buffer) {
 	// TODO: if cursor is at the end of the line (and there is a following line),
 	//   move cursor to the beginning of the following line and call again
+
 	buf.CursorRight(buf.Document().FindEndOfCurrentWordWithSpace())
 }
 
@@ -65,8 +66,9 @@ func backward_word(buf *Buffer) {
 	// TODO: if cursor is at the beginning of the line (and there is a preceeding line),
 	//   move cursor to the end of the preceeding line and call again
 	doc := buf.Document()
-	wstart := doc.FindStartOfPreviousWordWithSpace()
-	buf.CursorLeft(len([]rune(doc.TextBeforeCursor())) - wstart)
+
+	wstart := doc.FindStartOfCurrentWordWithSpace()
+	buf.CursorLeft(Offset(len([]rune(doc.TextBeforeCursor())) - wstart))
 }
 
 // delete and copy word at cursor
@@ -83,14 +85,14 @@ func kill_word(buf *Buffer) {
 func backward_kill_word(buf *Buffer) {
 	// TODO: if cursor is at the beginning of the line (and there is a preceeding line),
 	//   join with previous line and call again on new buffer.
-	clipboard = buf.DeleteBeforeCursor(len([]rune(buf.Document().GetWordBeforeCursorWithSpace())))
+	clipboard = buf.DeleteBeforeCursor(Offset(len([]rune(buf.Document().GetWordBeforeCursorWithSpace()))))
 }
 
 func kill_line(buf *Buffer) {
 	doc := buf.Document()
 	x := []rune(doc.CurrentLineAfterCursor())
 	if len(x) > 0 {
-		clipboard = buf.Delete(len(x))
+		clipboard = buf.Delete(Offset(len(x)))
 	} else if !doc.CursorOnLastLine() {
 		buf.DeleteBeforeCursor(1)
 	}
@@ -98,7 +100,7 @@ func kill_line(buf *Buffer) {
 
 func backward_kill_line(buf *Buffer) {
 	x := []rune(buf.Document().TextBeforeCursor())
-	clipboard = buf.DeleteBeforeCursor(len(x))
+	clipboard = buf.DeleteBeforeCursor(Offset(len(x)))
 }
 
 func yank(buf *Buffer) {

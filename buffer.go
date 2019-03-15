@@ -17,17 +17,17 @@ type StateFlags struct {
 type Buffer struct {
 	text            string
 	textLock        *sync.RWMutex
-	cursorPosition  int // relative to the absolute beginning
-	cacheDocument   *Document
-	preferredColumn int // Remember the original column for the next up/down movement.
+	cursor          Index // absolute character index into 'text'
+	preferredColumn Index // preferred column for the next up/down movement.
 	flags           StateFlags
+
+	cacheDocument *Document
 }
 
 // NewBuffer is constructor of Buffer struct.
 func NewBuffer() *Buffer {
 	return &Buffer{
-		textLock:        &sync.RWMutex{},
-		preferredColumn: -1, // current / don't care
+		textLock: &sync.RWMutex{},
 	}
 }
 
@@ -56,11 +56,8 @@ func (b *Buffer) Document() *Document {
 }
 
 func (b *Buffer) document() *Document {
-	if b.cacheDocument == nil || b.cacheDocument.cursorPosition != b.cursorPosition || b.cacheDocument.Text != b.text {
-		b.cacheDocument = &Document{
-			Text:           b.text,
-			cursorPosition: b.cursorPosition,
-		}
+	if b.cacheDocument == nil || b.cacheDocument.CursorIndex() != b.cursor || b.cacheDocument.Text() != b.text {
+		b.cacheDocument = NewDocument(b.text, b.CursorIndex())
 	}
 	return b.cacheDocument
 }
@@ -83,16 +80,20 @@ func (b *Buffer) setTranslatedKey(key KeyCode) {
 	b.flags.translatedKey = key
 }
 
+// CursorIndex returns the current cursor position byte index (0-based).
+func (b *Buffer) CursorIndex() (index Index) {
+	return b.cursor
+}
+
 // DisplayCursorPosition returns the cursor position on rendered text on terminal emulators.
 // So if Document is "日本(cursor)語", 4 is returned because '日' and '本' are double width characters.
-func (b *Buffer) DisplayCursorPosition() int {
-	return b.Document().DisplayCursorPosition()
+func (b *Buffer) CursorTextColumn() Column {
+	return b.Document().CursorTextColumn()
 }
 
 // DisplayCursorCoord returns similar to DisplayCursorPosition but separate col & row.
-func (b *Buffer) DisplayCursorCoord(termWidth int) Coord {
-	return b.Document().DisplayCursorCoord(termWidth)
-
+func (b *Buffer) CursorDisplayCoord(termWidth Column) Coord {
+	return b.Document().CursorDisplayCoord(termWidth)
 }
 
 // InsertText insert string from current line.
@@ -105,7 +106,7 @@ func (b *Buffer) InsertText(v string, overwrite bool, moveCursor bool) {
 
 func (b *Buffer) insertText(v string, overwrite bool, moveCursor bool) {
 	or := []rune(b.text)
-	oc := b.cursorPosition
+	oc := b.cursor
 
 	if overwrite {
 		overwritten := string(or[oc : oc+len(v)])
@@ -119,16 +120,16 @@ func (b *Buffer) insertText(v string, overwrite bool, moveCursor bool) {
 	}
 
 	if moveCursor {
-		b.cursorPosition += len([]rune(v))
-		b.preferredColumn = b.document().CursorPositionCol()
+		b.cursor += len([]rune(v))
+		b.preferredColumn = b.document().CursorColumnIndex()
 	}
 }
 
-// SetText method to set text and update cursorPosition.
+// SetText method to set text and update cursor.
 // (When doing this, make sure that the position is valid for this text.
 // text/cursor position should be consistent at any time, otherwise set a Document instead.)
 func (b *Buffer) setText(v string) {
-	debug.Assert(b.cursorPosition <= len([]rune(v)), "length of input should be shorter than cursor position")
+	debug.Assert(b.cursor <= len([]rune(v)), "length of input should be shorter than cursor position")
 	old := b.text
 	b.text = v
 
@@ -140,92 +141,118 @@ func (b *Buffer) setText(v string) {
 }
 
 // Set cursor position. Return whether it changed.
-func (b *Buffer) setCursorPosition(p int) {
-	o := b.cursorPosition
+func (b *Buffer) setCursorIndex(p int) {
+	o := b.cursor
 	if p > 0 {
-		b.cursorPosition = p
+		b.cursor = p
 	} else {
-		b.cursorPosition = 0
+		b.cursor = 0
 	}
 	if p != o {
 		// Cursor position is changed.
-		// TODO: Call a onCursorPositionChanged function.
+		// TODO: Call a onCursorIndexChanged function.
 	}
 }
 
 func (b *Buffer) setDocument(d *Document) {
 	b.cacheDocument = d
-	b.setCursorPosition(d.cursorPosition) // Call before setText because setText check the relation between cursorPosition and line length.
-	b.setText(d.Text)
+	b.setCursorIndex(d.cursor) // Call before setText because setText check the relation between cursor and line length.
+	b.setText(d.Text())
+}
+
+// CursorPrev cursor 'count' bytes backwards in the text (might cross lines).
+func (b *Buffer) CursorPrev(count int) {
+	if count < 0 {
+		b.CursorNext(-count)
+	} else if count > b.cursor {
+		b.cursor = 0
+	} else {
+		b.cursor -= count
+	}
+}
+
+// CursorNext cursor 'count' bytes forwards in the text (might cross lines).
+func (b *Buffer) CursorNext(count int) {
+	b.textLock.RLock()
+	defer b.textLock.RUnlock()
+
+	if count < 0 {
+		b.CursorPrev(-count)
+	} else if b.cursor > len(b.text) {
+		b.cursor = len(b.text)
+	} else {
+		b.cursor += count
+	}
 }
 
 // CursorLeft move to left on the current line.
-func (b *Buffer) CursorLeft(count int) {
+func (b *Buffer) CursorLeft(count Offset) {
 	b.textLock.RLock()
 	defer b.textLock.RUnlock()
 
-	l := b.document().GetCursorLeftPosition(count)
-	b.cursorPosition += l
-	b.preferredColumn = b.document().CursorPositionCol()
+	b.cursor += Index(b.document().GetCursorLeftOffset(count))
+	b.preferredColumn = b.document().CursorColumnIndex()
 }
 
 // CursorRight move to right on the current line.
-func (b *Buffer) CursorRight(count int) {
+func (b *Buffer) CursorRight(count Offset) {
 	b.textLock.RLock()
 	defer b.textLock.RUnlock()
 
-	l := b.document().GetCursorRightPosition(count)
-	b.cursorPosition += l
-	b.preferredColumn = b.document().CursorPositionCol()
+	b.cursor += Index(b.document().GetCursorRightOffset(count))
+	b.preferredColumn = b.document().CursorColumnIndex()
 }
 
 // CursorUp move cursor to the previous line.
 // (for multi-line edit).
-func (b *Buffer) CursorUp(count int) {
-	b.textLock.RLock()
-	defer b.textLock.RUnlock()
-
-	orig := b.preferredColumn
-	if b.preferredColumn == -1 { // -1 means not set
-		orig = b.document().CursorPositionCol()
-	}
-	b.cursorPosition += b.document().GetCursorUpPosition(count, orig)
+func (b *Buffer) CursorUp(count Row) {
+	b.cursor += Index(b.Document().GetCursorUpOffset(count, b.preferredColumn))
 }
 
 // CursorDown move cursor to the next line.
 // (for multi-line edit).
-func (b *Buffer) CursorDown(count int) {
-	b.textLock.RLock()
-	defer b.textLock.RUnlock()
-
-	orig := b.preferredColumn
-	if b.preferredColumn == -1 { // -1 means not set
-		orig = b.document().CursorPositionCol()
-	}
-	b.cursorPosition += b.document().GetCursorDownPosition(count, orig)
+func (b *Buffer) CursorDown(count Row) {
+	b.cursor += Index(b.Document().GetCursorDownOffset(count, b.preferredColumn))
 }
 
 // DeleteBeforeCursor delete specified number of characters before cursor and return the deleted text.
-func (b *Buffer) DeleteBeforeCursor(count int) (deleted string) {
+func (b *Buffer) DeleteBeforeCursor(count Offset) (deleted string) {
 	b.textLock.Lock()
 	defer b.textLock.Unlock()
 
 	debug.Assert(count >= 0, "count should be positive")
 	r := []rune(b.text)
 
-	if b.cursorPosition > 0 {
-		start := b.cursorPosition - count
+	if b.cursor > 0 {
+		start := b.cursor - Index(count)
 		if start < 0 {
 			start = 0
 		}
-		deleted = string(r[start:b.cursorPosition])
-		b.setDocument(&Document{
-			Text:           string(r[:start]) + string(r[b.cursorPosition:]),
-			cursorPosition: b.cursorPosition - len([]rune(deleted)),
-		})
+		deleted = string(r[start:b.cursor])
+		b.setDocument(NewDocument(
+			string(r[:start])+string(r[b.cursor:]),
+			b.cursor-len([]rune(deleted)),
+		))
 	}
-	b.preferredColumn = b.document().CursorPositionCol()
+	b.preferredColumn = b.document().CursorColumnIndex()
 	return
+}
+
+// Delete specified number of characters and Return the deleted text.
+func (b *Buffer) Delete(count Offset) (deleted string) {
+	b.textLock.Lock()
+	defer b.textLock.Unlock()
+
+	return b.delete(count)
+}
+
+func (b *Buffer) delete(count Offset) (deleted string) {
+	r := []rune(b.text)
+	if b.cursor < len(r) {
+		deleted = b.document().TextAfterCursor()[:count]
+		b.setText(string(r[:b.cursor]) + string(r[b.cursor+len(deleted):]))
+	}
+	return deleted
 }
 
 // NewLine means CR.
@@ -243,30 +270,13 @@ func (b *Buffer) NewLine(copyMargin bool) {
 	}
 }
 
-// Delete specified number of characters and Return the deleted text.
-func (b *Buffer) Delete(count int) (deleted string) {
-	b.textLock.Lock()
-	defer b.textLock.Unlock()
-
-	return b.delete(count)
-}
-
-func (b *Buffer) delete(count int) (deleted string) {
-	r := []rune(b.text)
-	if b.cursorPosition < len(r) {
-		deleted = b.Document().TextAfterCursor()[:count]
-		b.setText(string(r[:b.cursorPosition]) + string(r[b.cursorPosition+len(deleted):]))
-	}
-	return deleted
-}
-
 // JoinNextLine joins the next line to the current one by deleting the line ending after the current line.
 func (b *Buffer) JoinNextLine(separator string) {
 	b.textLock.Lock()
 	defer b.textLock.Unlock()
 
 	if !b.document().CursorOnLastLine() {
-		b.cursorPosition += b.document().GetEndOfLinePosition()
+		b.cursor += Index(b.document().GetEndOfLineOffset())
 		b.delete(1)
 		// Remove spaces
 		b.setText(b.document().TextBeforeCursor() + separator + strings.TrimLeft(b.document().TextAfterCursor(), " "))
@@ -275,12 +285,12 @@ func (b *Buffer) JoinNextLine(separator string) {
 
 // SwapCharactersBeforeCursor swaps the last two characters before the cursor.
 func (b *Buffer) SwapCharactersBeforeCursor() {
-	if b.cursorPosition >= 2 {
+	if b.cursor >= 2 {
 		b.textLock.Lock()
 		defer b.textLock.Unlock()
 
-		x := b.text[b.cursorPosition-2 : b.cursorPosition-1]
-		y := b.text[b.cursorPosition-1 : b.cursorPosition]
-		b.setText(b.text[:b.cursorPosition-2] + y + x + b.text[b.cursorPosition:])
+		x := b.text[b.cursor-2 : b.cursor-1]
+		y := b.text[b.cursor-1 : b.cursor]
+		b.setText(b.text[:b.cursor-2] + y + x + b.text[b.cursor:])
 	}
 }

@@ -12,8 +12,8 @@ func TestBuffer_InsertText(t *testing.T) {
 		t.Errorf("Expected %#v, got %#v", "some_text", b.Text())
 	}
 
-	if b.cursorPosition != len("some_text") {
-		t.Errorf("Expected %#v, got %#v", len("some_text"), b.cursorPosition)
+	if b.CursorIndex() != len("some_text") {
+		t.Errorf("Expected %#v, got %#v", len("some_text"), b.CursorIndex())
 	}
 }
 
@@ -28,8 +28,8 @@ func TestBuffer_CursorMovement(t *testing.T) {
 	if b.Text() != "some_teAxt" {
 		t.Errorf("Expected %#v, got %#v", "some_teAxt", b.Text())
 	}
-	if b.cursorPosition != len("some_teA") {
-		t.Errorf("Expected %#v, got %#v", len("some_teA"), b.cursorPosition)
+	if b.CursorIndex() != len("some_teA") {
+		t.Errorf("Expected %#v, got %#v", len("some_teA"), b.CursorIndex())
 	}
 
 	// Moving over left character counts.
@@ -38,8 +38,8 @@ func TestBuffer_CursorMovement(t *testing.T) {
 	if b.Text() != "Asome_teAxt" {
 		t.Errorf("Expected %#v, got %#v", "some_teAxt", b.Text())
 	}
-	if b.cursorPosition != len("A") {
-		t.Errorf("Expected %#v, got %#v", len("some_teA"), b.cursorPosition)
+	if b.CursorIndex() != len("A") {
+		t.Errorf("Expected %#v, got %#v", len("some_teA"), b.CursorIndex())
 	}
 
 	// TODO: Going right already at right end.
@@ -58,43 +58,45 @@ func TestBuffer_CursorUp(t *testing.T) {
 	b := NewBuffer()
 	b.InsertText("long line1\nline2", false, true)
 	b.CursorUp(1)
-	if b.Document().cursorPosition != 5 {
-		t.Errorf("Expected %#v, got %#v", 5, b.Document().cursorPosition)
+	if b.Document().CursorIndex() != 5 {
+		t.Errorf("Expected %#v, got %#v", 5, b.Document().CursorIndex())
 	}
 
 	// Going up when already at the top.
 	b.CursorUp(1)
-	if b.Document().cursorPosition != 5 {
-		t.Errorf("Expected %#v, got %#v", 5, b.Document().cursorPosition)
+	if b.Document().CursorIndex() != 5 {
+		t.Errorf("Expected %#v, got %#v", 5, b.Document().CursorIndex())
 	}
 
 	// Going up to a line that's shorter.
 	b.setDocument(&Document{})
 	b.InsertText("line1\nlong line2", false, true)
 	b.CursorUp(1)
-	if b.Document().cursorPosition != 5 {
-		t.Errorf("Expected %#v, got %#v", 5, b.Document().cursorPosition)
+	if b.Document().CursorIndex() != 5 {
+		t.Errorf("Expected %#v, got %#v", 5, b.Document().CursorIndex())
 	}
 }
 
 func TestBuffer_CursorDown(t *testing.T) {
 	b := NewBuffer()
 	b.InsertText("line1\nline2", false, true)
-	b.cursorPosition = 3
+	b.cursor = 3 //  ^
+	b.preferredColumn = b.cursor
 
 	// Normally going down
 	b.CursorDown(1)
-	if b.Document().cursorPosition != len("line1\nlin") {
-		t.Errorf("Expected %#v, got %#v", len("line1\nlin"), b.Document().cursorPosition)
+	if b.CursorIndex() != len("line1\nlin") {
+		t.Errorf("Expected %#v, got %#v", len("line1\nlin"), b.CursorIndex())
 	}
 
-	// Going down to a line that's storter.
+	// Going down to a line that's shorter.
 	b = NewBuffer()
 	b.InsertText("long line1\na\nb", false, true)
-	b.cursorPosition = 3
+	b.cursor = 3 //  ^
+	b.preferredColumn = b.cursor
 	b.CursorDown(1)
-	if b.Document().cursorPosition != len("long line1\na") {
-		t.Errorf("Expected %#v, got %#v", len("long line1\na"), b.Document().cursorPosition)
+	if b.CursorIndex() != len("long line1\na") {
+		t.Errorf("Expected %#v, got %#v", len("long line1\na"), b.CursorIndex())
 	}
 }
 
@@ -110,8 +112,8 @@ func TestBuffer_DeleteBeforeCursor(t *testing.T) {
 	if deleted != "e" {
 		t.Errorf("Expected %#v, got %#v", deleted, "e")
 	}
-	if b.cursorPosition != len("some_t") {
-		t.Errorf("Expected %#v, got %#v", len("some_t"), b.cursorPosition)
+	if b.CursorIndex() != len("some_t") {
+		t.Errorf("Expected %#v, got %#v", len("some_t"), b.CursorIndex())
 	}
 
 	// Delete over the characters length before cursor.
@@ -165,7 +167,7 @@ func TestBuffer_JoinNextLine(t *testing.T) {
 	// Test when there is no '\n' in the text
 	b = NewBuffer()
 	b.InsertText("line1", false, true)
-	b.cursorPosition = 0
+	b.cursor = 0
 	b.JoinNextLine(" ")
 	ac = b.Text()
 	ex = "line1"

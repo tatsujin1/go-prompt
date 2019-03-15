@@ -59,7 +59,7 @@ func (e *ActonEditor) indent(b *prompt.Buffer) {
 
 func (e *ActonEditor) outdent(b *prompt.Buffer) {
 	// TODO: delete from beginning of the line?
-	b.DeleteBeforeCursor(len(e.indent_str))
+	b.DeleteBeforeCursor(prompt.Offset(len(e.indent_str)))
 }
 
 func (e *ActonEditor) on_end_line(ev *prompt.Event) {
@@ -88,11 +88,11 @@ func (e *ActonEditor) on_end_line(ev *prompt.Event) {
 
 	} else if e.ml {
 		// qualified for outdent if the current line is empty
-		outdent_qual := doc.CursorAtEndOfLine() && doc.CursorOnLastLine() && doc.CursorPositionRow() > 0 && len(strings.TrimSpace(line)) == 0
+		outdent_qual := doc.CursorAtEndOfLine() && doc.CursorOnLastLine() && doc.CursorRow() > 0 && len(strings.TrimSpace(line)) == 0
 
 		if outdent_qual && e.outdent_after_empty == MLOutdentOnSecondEmpty {
 			// outdent if the previous line is (also) empty
-			prev_line := doc.Lines()[doc.CursorPositionRow()-1]
+			prev_line := doc.Lines()[doc.CursorRow()-1]
 			outdent_qual = len(strings.TrimSpace(prev_line)) == 0
 		}
 
@@ -133,19 +133,27 @@ func main() {
 	p := prompt.New(
 		executor,
 		completer,
-		prompt.OptionPrefix("⯈"),
+		prompt.OptionLivePrefix(func(_ *prompt.Document, row prompt.Row) (string, bool) {
+			if row == 0 {
+				return "main⯈", true
+			} else {
+				return fmt.Sprintf("…%d⯈", row), true
+			}
+		}),
 		prompt.OptionBindKey(prompt.KeyBind{prompt.Enter, e.on_end_line}),
 		prompt.OptionDescriptionBGColor(prompt.NewRGB(40, 25, 50)),
 		prompt.OptionDescriptionTextColor(prompt.NewRGB(120, 120, 40)),
 	)
 
-	go func() {
-		for {
-			time.Sleep(3 * time.Second)
-			fmt.Fprintln(os.Stderr, "async output!")
-			p.OutputAsync("asynchronously text output  %v\n", time.Now().Format(time.RFC3339))
-		}
-	}()
+	if false {
+		go func() {
+			for {
+				time.Sleep(3 * time.Second)
+				fmt.Fprintln(os.Stderr, "async output!")
+				p.OutputAsync("asynchronously text output  %v\n", time.Now().Format(time.RFC3339))
+			}
+		}()
+	}
 
 	os.Exit(p.Run())
 }

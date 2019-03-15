@@ -16,8 +16,8 @@ const (
 )
 
 var (
-	textMargin       = runewidth.StringWidth(textPrefix + textSuffix)
-	descMargin       = runewidth.StringWidth(descPrefix + descSuffix)
+	textMargin       = Column(runewidth.StringWidth(textPrefix + textSuffix))
+	descMargin       = Column(runewidth.StringWidth(descPrefix + descSuffix))
 	completionMargin = textMargin + descMargin
 )
 
@@ -43,10 +43,10 @@ type Choice struct {
 }
 
 type formattedChoices struct {
-	maxWidth   int
-	termWidth  int
+	maxWidth   Column
+	termWidth  Column
 	formatted  []Choice
-	totalWidth int
+	totalWidth Column
 	useDesc    bool
 }
 
@@ -155,7 +155,7 @@ func (c *CompletionManager) update() {
 	}
 }
 
-func (c *CompletionManager) FormatChoices(maxWidth, termWidth int) (formatted []Choice, totalWidth int, useDesc bool) {
+func (c *CompletionManager) FormatChoices(maxWidth, termWidth Column) (formatted []Choice, totalWidth Column, useDesc bool) {
 	// TODO: this formatting should not be here,
 	//   but in a "completion view/renderer"-type-thingie
 
@@ -177,8 +177,8 @@ func (c *CompletionManager) FormatChoices(maxWidth, termWidth int) (formatted []
 
 	useDesc = c.displayMode == SingleColumnDescription
 
-	var textWidth int
-	var descWidth int
+	var textWidth Column
+	var descWidth Column
 
 	textMaxWidth := maxWidth
 
@@ -235,10 +235,10 @@ func deleteBreakLineCharacters(s string) string {
 	return s
 }
 
-func formatTexts(texts []string, maxWidth int, prefix, suffix string) (formatted []string, totalWidth int) {
-	wPrefix := runewidth.StringWidth(prefix)
-	wSuffix := runewidth.StringWidth(suffix)
-	wEllipsis := runewidth.StringWidth(ellipsis)
+func formatTexts(texts []string, maxWidth Column, prefix, suffix string) (formatted []string, totalWidth Column) {
+	wPrefix := Column(runewidth.StringWidth(prefix))
+	wSuffix := Column(runewidth.StringWidth(suffix))
+	wEllipsis := Column(runewidth.StringWidth(ellipsis))
 
 	if wPrefix+wSuffix+wEllipsis >= maxWidth {
 		// we don't seem to have space for anything!?
@@ -246,9 +246,9 @@ func formatTexts(texts []string, maxWidth int, prefix, suffix string) (formatted
 	}
 
 	// find widest text
-	widest := 0
+	var widest Column
 	for _, text := range texts {
-		w := runewidth.StringWidth(text)
+		w := Column(runewidth.StringWidth(text))
 		if w > widest {
 			widest = w
 		}
@@ -267,13 +267,13 @@ func formatTexts(texts []string, maxWidth int, prefix, suffix string) (formatted
 
 	formatted = make([]string, len(texts))
 	for idx, text := range texts {
-		w := runewidth.StringWidth(text)
+		w := Column(runewidth.StringWidth(text))
 		if w > widthLimit {
-			text = runewidth.Truncate(text, widthLimit, ellipsis)
+			text = runewidth.Truncate(text, int(widthLimit), ellipsis)
 			// runewidth.Truncate("您好xxx您好xxx", 11, "...") will "您好xxx..." (i.e. width 10),
 			// so we need to recalculate the width (and pad it at the end if necessary)
 		}
-		text = runewidth.FillRight(text, widthLimit)
+		text = runewidth.FillRight(text, int(widthLimit))
 
 		formatted[idx] = prefix + text + suffix
 		//fmt.Fprintf(os.Stderr, "-'%s' (%d)\n", formatted[idx], runewidth.StringWidth(formatted[idx]))

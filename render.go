@@ -13,16 +13,19 @@ import (
 
 // Render to render prompt information from state of Buffer.
 type Render struct {
-	out                ConsoleWriter
+	out ConsoleWriter
+	//cursor             Cursor
 	prefix             string
-	livePrefixCallback func() (prefix string, useLivePrefix bool)
+	prefixCallback     func(doc *Document, row Row) (prefix string, usePrefix bool)
+	continuationPrefix string
+	suffix             string
+	suffixCallback     func(doc *Document, row Row) (prefix string, usePrefix bool)
 	title              string
-	termHeight         int
-	termWidth          int
+	termHeight         Row
+	termWidth          Column
 
-	previousCursor      Coord
-	previousLineCount   int
-	previousRenderLines int
+	previousCursor    Coord
+	previousLineCount int
 
 	Colors             RenderColors
 	TrueColorSupported bool
@@ -63,15 +66,19 @@ var defaultColors = RenderColors{
 	scrollbarThumb:          BrightBlack,
 }
 
+var nilPrefix = func(*Document, Row) (string, bool) { return "", false }
+
 func NewRender(prefix string, w ConsoleWriter) *Render {
 	r := &Render{
 		prefix: prefix,
 		out:    w,
+		//cursor: NewCursor(w),
 		Colors: defaultColors,
 
-		previousLineCount:   1,
+		previousLineCount: 1,
 
-		livePrefixCallback: func() (string, bool) { return "", false },
+		prefixCallback: nilPrefix,
+		suffixCallback: nilPrefix,
 
 		outputLock: &sync.Mutex{},
 	}
@@ -111,11 +118,11 @@ func (r *Render) TearDown() {
 	debug.AssertNoError(r.out.Flush())
 }
 
-func (r *Render) prepareArea(lines int) {
-	for i := 0; i < lines; i++ {
+func (r *Render) prepareArea(lines Row) {
+	for i := Row(0); i < lines; i++ {
 		r.out.ScrollDown()
 	}
-	for i := 0; i < lines; i++ {
+	for i := Row(0); i < lines; i++ {
 		r.out.ScrollUp()
 	}
 	return
@@ -123,8 +130,8 @@ func (r *Render) prepareArea(lines int) {
 
 // UpdateWinSize called when window size is changed.
 func (r *Render) UpdateWinSize(ws *WinSize) {
-	r.termHeight = int(ws.Row)
-	r.termWidth = int(ws.Col)
+	r.termHeight = Row(ws.Row)
+	r.termWidth = Column(ws.Col)
 	return
 }
 
@@ -159,7 +166,6 @@ func (r *Render) render(buf *Buffer, compMgr *CompletionManager) {
 	//   and generate actual output instructions from that diff.
 
 	defer func() { debug.AssertNoError(r.out.Flush()) }()
-	//dbg("------------------------- RENDER")
 
 	// if lines have been added to the edit, add space
 	lcount := doc.LineCount()
@@ -167,19 +173,17 @@ func (r *Render) render(buf *Buffer, compMgr *CompletionManager) {
 	if lcount > r.previousLineCount {
 		r.out.WriteRaw([]byte{'\n'})
 		added = 1
-		//dbg("added LF  (%d -> %d)", r.previousLineCount, doc.LineCount())
 	}
 
 	// move to beginning of the current prompt
-	r.promptHome(Coord{r.previousCursor.X, r.previousCursor.Y + added})
+	r.promptHome(Coord{r.previousCursor.X, r.previousCursor.Y + Row(added)})
 
-	prefix := r.getCurrentPrefix()
 	// calculate future cursor position after prefix & line is printed
-	editPoint := doc.DisplayCursorCoordWithPrefix(r.termWidth, prefix)
-	//dbg("editPoint @ %+v", editPoint)
+	// TODO: this requires that 'contPfx' has fixed length
+	editPoint := doc.CursorDisplayCoordWithPrefix(Column(r.termWidth), r.getPrefix)
 
 	// prepare area
-	h := lcount + 1 + int(compMgr.MaxVisibleChoices())
+	h := Row(lcount + 1 + int(compMgr.MaxVisibleChoices()))
 	if h > r.termHeight || completionMargin > r.termWidth {
 		r.renderWindowTooSmall()
 		return
@@ -205,13 +209,13 @@ func (r *Render) render(buf *Buffer, compMgr *CompletionManager) {
 	if choice, ok := compMgr.Selected(); ok {
 		// move to the beginning of the word being completed
 		completing_word := doc.GetWordBeforeCursorUntilSeparator(compMgr.wordSeparator)
-		editPoint = r.move(editPoint, Coord{-runewidth.StringWidth(completing_word), 0})
+		editPoint = r.move(editPoint, Coord{Column(-runewidth.StringWidth(completing_word)), 0})
 
 		// write the choice, using the configured preview style
 		r.out.SetColor(r.Colors.previewChoiceText, r.Colors.previewChoiceBG, false)
 		r.out.WriteStr(choice.Text)
 		// move edit point to the end of the suggested word
-		editPoint.X += runewidth.StringWidth(choice.Text)
+		editPoint.X += Column(runewidth.StringWidth(choice.Text))
 		r.out.SaveCursor()
 
 		// write the text following the cursor (using default style)
@@ -219,10 +223,9 @@ func (r *Render) render(buf *Buffer, compMgr *CompletionManager) {
 		rest := buf.Document().TextAfterCursor()
 		r.out.WriteStr(rest)
 		// total length of line
-		eol := editPoint.X + runewidth.StringWidth(rest)
+		eol := editPoint.X + Column(runewidth.StringWidth(rest))
 		// move cursor back to the edit point
 		if r.lineWrap(eol) { // output LF if necessary
-			dbg("choice wrapped!\n")
 			r.out.RestoreCursor()
 			r.out.CursorUp(1)
 		} else {
@@ -241,7 +244,7 @@ func (r *Render) BreakLine(buf *Buffer) {
 
 	// Erasing and Render
 	doc := buf.Document()
-	editPoint := doc.DisplayCursorCoordWithPrefix(r.termWidth, r.getCurrentPrefix())
+	editPoint := doc.CursorDisplayCoordWithPrefix(r.termWidth, r.getPrefix)
 	r.promptHome(editPoint)
 	r.out.EraseDown()
 	r.renderPrompt(doc, true)
@@ -284,32 +287,42 @@ const scrollbarWidth = 1
 const safetyMargin = 1
 
 func (r *Render) renderPrompt(doc *Document, breakLine bool) {
-	r.renderPrefix()
+
+	// TODO: syntax highlight of ducment text
+	//   porbably make something akin to the "formatted text" in prompt-toolkit
+
 	r.out.SetColor(r.Colors.inputText, r.Colors.inputBG, false)
-	r.out.WriteStr(doc.Text)
+	for row, line := range strings.SplitAfter(doc.Text(), "\n") {
+		r.out.SetColor(r.Colors.prefixText, r.Colors.prefixBG, false)
+		r.out.WriteRawStr(r.getPrefix(doc, Row(row)))
+		r.out.SetColor(DefaultColor, DefaultColor, false)
+
+		r.out.WriteRawStr(line)
+	}
+
 	if breakLine {
 		r.out.WriteRawStr("\n")
 	}
-	r.out.SetColor(DefaultColor, DefaultColor, false)
 }
 
-func (r *Render) renderCompletion(buf *Buffer, compMgr *CompletionManager) int {
+func (r *Render) renderCompletion(buf *Buffer, compMgr *CompletionManager) {
 	if compMgr.NumChoices() == 0 {
-		return 0
+		return
 	}
-	editPoint := buf.Document().DisplayCursorCoordWithPrefix(r.termWidth, r.getCurrentPrefix())
+
+	editPoint := buf.Document().CursorDisplayCoordWithPrefix(r.termWidth, r.getPrefix)
 
 	widthLimit := r.termWidth - editPoint.X - scrollbarWidth - safetyMargin
 
 	formatted, width, withDesc := compMgr.FormatChoices(widthLimit, r.termWidth)
 	width += scrollbarWidth
 
-	windowHeight := len(formatted)
-	if windowHeight > int(compMgr.MaxVisibleChoices()) {
-		windowHeight = int(compMgr.MaxVisibleChoices())
+	windowHeight := Row(len(formatted))
+	if windowHeight > Row(compMgr.MaxVisibleChoices()) {
+		windowHeight = Row(compMgr.MaxVisibleChoices())
 	}
 
-	cursorMoved := 0
+	var cursorMoved Column
 
 	if r.termWidth-editPoint.X < 40 || editPoint.X+width >= r.termWidth {
 		cursorMoved = -editPoint.X + 10 // say, at column 10 :)
@@ -320,7 +333,7 @@ func (r *Render) renderCompletion(buf *Buffer, compMgr *CompletionManager) int {
 		width += scrollbarWidth
 	}
 
-	formatted = formatted[compMgr.verticalScroll : compMgr.verticalScroll+windowHeight]
+	formatted = formatted[compMgr.verticalScroll : compMgr.verticalScroll+int(windowHeight)]
 	r.prepareArea(windowHeight)
 
 	// compute scrollbar parameters
@@ -337,7 +350,7 @@ func (r *Render) renderCompletion(buf *Buffer, compMgr *CompletionManager) int {
 
 	selected := compMgr.selected - compMgr.verticalScroll
 
-	for i := 0; i < windowHeight; i++ {
+	for i := 0; i < int(windowHeight); i++ {
 		r.out.CursorDown(1)
 
 		// draw choice text
@@ -372,48 +385,43 @@ func (r *Render) renderCompletion(buf *Buffer, compMgr *CompletionManager) int {
 	r.move(Coord{}, Coord{-cursorMoved, -windowHeight})
 
 	r.out.SetColor(DefaultColor, DefaultColor, false)
-
-	return windowHeight
 }
 
-// getCurrentPrefix to get current prefix.
-// If live-prefix is enabled, return live-prefix.
-func (r *Render) getCurrentPrefix() string {
-	if prefix, ok := r.livePrefixCallback(); ok {
+// getPrefix to get current prefix.
+// If prefix callback is set, use that.
+func (r *Render) getPrefix(doc *Document, row Row) string {
+	if prefix, ok := r.prefixCallback(doc, row); ok {
 		return prefix
 	}
-	return r.prefix
+	if doc.CursorRow() == 0 {
+		return r.prefix
+	}
+	return r.continuationPrefix
 }
 
-func (r *Render) renderPrefix() {
-	// TODO: should the prefix include style information?
-	r.out.SetColor(r.Colors.prefixText, r.Colors.prefixBG, false)
-	r.out.WriteRawStr(r.getCurrentPrefix())
-	r.out.SetColor(DefaultColor, DefaultColor, false)
+// getRightPrefix to get current right prefix.
+// If prefix callback is set, use that.
+func (r *Render) getSuffix(doc *Document, row Row) string {
+	if suffix, ok := r.suffixCallback(doc, row); ok {
+		return suffix
+	}
+	return r.suffix
 }
 
 // move moves the cursor in the 'rel' direction (right & down).
 //   if 'rel' values are negative it moves in the oppositve direction
 // returns 'from' + 'rel'
 func (r *Render) move(from, rel Coord) Coord {
-	//dbg("move: %+v", rel)
-	r.out.CursorDown(rel.Y)
-	r.out.CursorForward(rel.X)
+	r.out.CursorDown(int(rel.Y))
+	r.out.CursorForward(int(rel.X))
 	return from.Add(rel)
 }
 
 func (r *Render) promptHome(from Coord) {
-	//dbg("promptHome: %+v", from)
 	r.move(Coord{}, Coord{-from.X, -from.Y})
 }
 
-// toCoord returns the relative position from the beginning of the string.
-func (r *Render) toCoord(cursor int) Coord {
-	col := int(r.termWidth)
-	return Coord{cursor % col, cursor / col}
-}
-
-func (r *Render) lineWrap(cursor int) bool {
+func (r *Render) lineWrap(cursor Column) bool {
 	if runtime.GOOS != "windows" && cursor > 0 && cursor%r.termWidth == 0 {
 		r.out.WriteRaw([]byte{'\n'})
 		return true

@@ -31,10 +31,42 @@ func OptionTitle(x string) Option {
 	}
 }
 
-// OptionPrefix to set prefix string.
+// OptionPrefix to set (a fixed) prefix string.
 func OptionPrefix(x string) Option {
 	return func(p *Prompt) error {
 		p.renderer.prefix = x
+		return nil
+	}
+}
+
+// OptionContinuationPrefix to set (a fixed) continuation prefix string.
+func OptionContinuationPrefix(x string) Option {
+	return func(p *Prompt) error {
+		p.renderer.continuationPrefix = x
+		return nil
+	}
+}
+
+// OptionSuffix to set (a fixed) suffix string.
+func OptionSuffix(x string) Option {
+	return func(p *Prompt) error {
+		p.renderer.suffix = x
+		return nil
+	}
+}
+
+// OptionLivePrefix to change the prefix (and continuation) dynamically by callback function.
+func OptionLivePrefix(f func(doc *Document, row Row) (prefix string, usePrefix bool)) Option {
+	return func(p *Prompt) error {
+		p.renderer.prefixCallback = f
+		return nil
+	}
+}
+
+// OptionLiveSuffix to change the suffix dynamically by callback function.
+func OptionLiveSuffix(f func(doc *Document, row Row) (prefix string, usePrefix bool)) Option {
+	return func(p *Prompt) error {
+		p.renderer.suffixCallback = f
 		return nil
 	}
 }
@@ -43,14 +75,6 @@ func OptionPrefix(x string) Option {
 func OptionCompletionWordSeparator(x string) Option {
 	return func(p *Prompt) error {
 		p.completion.wordSeparator = x
-		return nil
-	}
-}
-
-// OptionLivePrefix to change the prefix dynamically by callback function
-func OptionLivePrefix(f func() (prefix string, useLivePrefix bool)) Option {
-	return func(p *Prompt) error {
-		p.renderer.livePrefixCallback = f
 		return nil
 	}
 }
@@ -255,9 +279,22 @@ func OptionBindControlSequence(b ...ControlSequenceBind) Option {
 }
 
 // OptionShowCompletionAtStart to set completion window is open at start.
-func OptionShowCompletionAtStart() Option {
+func OptionShowCompletionAtStart(enabled bool) Option {
 	return func(p *Prompt) error {
-		p.completion.showAtStart = true
+		p.completion.showAtStart = enabled
+		if enabled {
+			p.completion.asYouType = false
+		}
+		return nil
+	}
+}
+
+func OptionCompleteAsYouType(enabled bool) Option {
+	return func(p *Prompt) error {
+		p.completion.asYouType = enabled
+		if enabled {
+			p.completion.showAtStart = false
+		}
 		return nil
 	}
 }

@@ -31,6 +31,7 @@ type CompletionManager struct {
 
 	verticalScroll int
 	wordSeparator  string
+	asYouType      bool
 	showAtStart    bool
 
 	formatCache *formattedChoices
@@ -65,6 +66,7 @@ func NewCompletionManager(completer Completer, maxVisible uint16) *CompletionMan
 		maxVisibleChoices: int(maxVisible),
 		displayMode:       SingleColumnDescription,
 		completer:         completer,
+		asYouType:         true, // by default true, to be "backwards compatible"
 
 		verticalScroll: 0,
 	}

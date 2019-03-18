@@ -2,8 +2,6 @@ package prompt
 
 import (
 	"bytes"
-	"fmt"
-	"os"
 	"strconv"
 )
 
@@ -33,6 +31,7 @@ func (w *VT100Writer) WriteRawStr(data string) {
 // WriteStr to write safety string by removing control sequences.
 func (w *VT100Writer) WriteStr(data string) {
 	w.Write([]byte(data))
+	//fmt.Fprintf(os.Stderr, "\x1b[2m>>\x1b[m '\x1b[33m%s\x1b[m'\n", data)
 	return
 }
 
@@ -173,12 +172,14 @@ func (w *VT100Writer) AskForCPR() {
 
 // SaveCursor saves current cursor position.
 func (w *VT100Writer) SaveCursor() {
+	//fmt.Fprintln(os.Stderr, "\x1b[33;1mSCP\x1b[m")
 	w.WriteRaw([]byte{0x1b, '[', 's'})
 	return
 }
 
 // RestoreCursor restores cursor position saved by the last SaveCursor.
 func (w *VT100Writer) RestoreCursor() {
+	//fmt.Fprintln(os.Stderr, "\x1b[33;1mRCP\x1b[m")
 	w.WriteRaw([]byte{0x1b, '[', 'u'})
 	return
 }

@@ -38,7 +38,7 @@ func (p *Prompt) Run() (exitCode int) {
 	debug.Log("start prompt")
 	p.setUp()
 
-	if p.completion.showAtStart {
+	if p.completion.showAtStart && p.completion.asYouType {
 		p.completion.FindCompletions(*p.buf.Document())
 	}
 	p.renderer.Render(p.buf, p.completion)
@@ -81,7 +81,7 @@ func (p *Prompt) Run() (exitCode int) {
 				debug.AssertNoError(p.in.TearDown())
 				p.executor(exec.input)
 
-				if p.completion.showAtStart {
+				if p.completion.showAtStart && p.completion.asYouType {
 					p.completion.FindCompletions(*p.buf.Document())
 				}
 				p.renderer.Render(p.buf, p.completion)
@@ -91,7 +91,9 @@ func (p *Prompt) Run() (exitCode int) {
 				go p.readBuffer(bufCh, stopReadBufCh)
 				go p.handleSignals(exitCh, termSizeCh, stopHandleSignalCh)
 			} else {
-				p.completion.FindCompletions(*p.buf.Document())
+				if p.completion.asYouType {
+					p.completion.FindCompletions(*p.buf.Document())
+				}
 				p.renderer.Render(p.buf, p.completion)
 			}
 		case w := <-termSizeCh:
@@ -195,6 +197,9 @@ func (p *Prompt) handleCompletionKeyBinding(key KeyCode, completing bool) KeyCod
 			p.completion.Next()
 		}
 	case Tab, ControlI: // next choice, or start completing
+		if !p.completion.asYouType {
+			p.completion.FindCompletions(*p.buf.Document())
+		}
 		p.completion.Next()
 	case Up:
 		if completing { // only if already completing

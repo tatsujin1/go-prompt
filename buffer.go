@@ -47,6 +47,10 @@ func (b *Buffer) Text() string {
 	return b.text
 }
 
+func (b *Buffer) IsEmpty() bool {
+	return len(b.text) == 0
+}
+
 // Document method to return document instance from the current text and cursor position.
 func (b *Buffer) Document() *Document {
 	b.textLock.RLock()

@@ -35,6 +35,16 @@ func OptionTitle(x string) Option {
 func OptionPrefix(x string) Option {
 	return func(p *Prompt) error {
 		p.renderer.prefix = x
+		// TODO: proposal for the renderer to always use 'prefixCallback',
+		//   it might even be possible to use 'prefixCallback' in place of 'getPrefix'
+		//p.renderer.prefixCallback = func(doc *Document, row Row) (string, bool) {
+		//	if row == 0 {
+		//		return x, true
+		//	} else if len(p.renderer.continuationPrefix) > 0 {
+		//		return p.renderer.continuationPrefix, true
+		//	}
+		//	return "", false
+		//}
 		return nil
 	}
 }
@@ -43,6 +53,16 @@ func OptionPrefix(x string) Option {
 func OptionContinuationPrefix(x string) Option {
 	return func(p *Prompt) error {
 		p.renderer.continuationPrefix = x
+		// TODO: proposal for the renderer to always use 'prefixCallback',
+		//   it might even be possible to use 'prefixCallback' in place of 'getPrefix'
+		//p.renderer.prefixCallback = func(doc *Document, row Row) (string, bool) {
+		//	if row > 0 {
+		//		return p.renderer.continuationPrefix, true
+		//	} else if len(p.renderer.prefix) > 0 {
+		//		return x, true
+		//	}
+		//	return "", false
+		//}
 		return nil
 	}
 }

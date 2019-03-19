@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	prompt "github.com/c-bata/go-prompt"
+	prompt "github.com/tatsujin/go-prompt"
 )
 
 func completer(in prompt.Document) []prompt.Choice {

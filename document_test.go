@@ -337,6 +337,14 @@ func TestDocument_CursorDisplayCoordWithPrefix(t *testing.T) {
 		{
 			prefix: []string{"prefix⯈"}, // 7
 			document: NewDocument(
+				"line 1\nline 2",
+				2,
+			),
+			expected: Coord{7 + 2, 0},
+		},
+		{
+			prefix: []string{"prefix⯈"}, // 7
+			document: NewDocument(
 				"こんにちは",
 				len([]rune("こ")),
 			),

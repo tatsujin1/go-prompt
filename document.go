@@ -1,14 +1,12 @@
 package prompt
 
 import (
-	"fmt"
-	"os"
 	"strings"
 
-	"github.com/c-bata/go-prompt/runes"
 	runewidth "github.com/mattn/go-runewidth"
 
 	"github.com/c-bata/go-prompt/internal/bisect"
+	"github.com/c-bata/go-prompt/internal/runes"
 )
 
 type Column int  // terminal column when rendered
@@ -60,30 +58,36 @@ func (d *Document) CursorDisplayCoord(termWidth Column) Coord {
 // It is assumed that the text starts at column 0.
 func (d *Document) CursorDisplayCoordWithPrefix(termWidth Column, prefix func(doc *Document, row Row) string) Coord {
 
-	//fmt.Fprintf(os.Stderr, "'%s' @ %d\n", d.Text(), d.cursor)
+	// TODO: this assumes that strings returned by prefix() does not contain '\n'
 
 	var x Column
+	var y Row
 	var cpos Index
-	var wraps Row
-	for row, text := range d.lines() {
-		//fmt.Fprintf(os.Stderr, "  @ %d: '%s'\n", cpos, text)
-		end := Index(len(text))
-		if cpos+end > d.cursor {
+	var end int
+	done := false
+	for row, rtext := range d.lines() {
+		if end = Index(len(rtext)); cpos+end >= d.cursor {
 			end = d.cursor - cpos
+			done = true // this is the last line we'll process
 		}
 		var w Column
 		if prefix != nil {
 			w = Column(runewidth.StringWidth(prefix(d, Row(row))))
 		}
-		w += Column(runewidth.StringWidth(string(text[:end])))
+		w += Column(runewidth.StringWidth(string(rtext[:end])))
 
 		x = w % termWidth
-		wraps += Row(w / termWidth)
+		y += 1 + Row(w/termWidth)
 
-		cpos += Index(Offset(len(text)) + LFsize)
+		advance := Index(Offset(len(rtext)) + LFsize)
+		cpos += advance
+
+		if done {
+			break
+		}
 	}
 	// -1: we want 'index', not 'number-of-lines'
-	return Coord{x, Row(d.LineCount()-1) + wraps}
+	return Coord{x, y - 1}
 }
 
 // GetCharRelativeToCursor return character relative to cursor position (0 = at cursor), or empty string
@@ -91,7 +95,6 @@ func (d *Document) GetCharFromCursor(offset Offset) (r rune) {
 	if d.cursor+Index(offset) >= len(d.text) {
 		return 0
 	}
-	fmt.Fprintf(os.Stderr, "cpos: %d   off: %d\n", d.cursor, offset)
 	return d.text[d.cursor+Index(offset)]
 }
 

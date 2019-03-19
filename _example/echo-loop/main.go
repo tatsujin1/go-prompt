@@ -133,12 +133,14 @@ func main() {
 	p := prompt.New(
 		executor,
 		completer,
-		prompt.OptionLivePrefix(func(_ *prompt.Document, row prompt.Row) (string, bool) {
+		prompt.OptionCompleteAsYouType(false),
+		prompt.OptionLivePrefix(func(_ *prompt.Document, row prompt.Row) (prefix string, active bool) {
 			if row == 0 {
 				return "main⯈", true
 			} else {
 				return fmt.Sprintf("…%d⯈", row), true
 			}
+			return
 		}),
 		prompt.OptionBindKey(prompt.KeyBind{prompt.Enter, e.on_end_line}),
 		prompt.OptionDescriptionBGColor(prompt.NewRGB(40, 25, 50)),

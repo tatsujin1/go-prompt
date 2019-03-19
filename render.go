@@ -118,21 +118,13 @@ func (r *Render) TearDown() {
 	debug.AssertNoError(r.out.Flush())
 }
 
-func (r *Render) prepareArea(lines Row) {
-	for i := Row(0); i < lines; i++ {
-		r.out.ScrollDown()
-	}
-	for i := Row(0); i < lines; i++ {
-		r.out.ScrollUp()
-	}
-	return
-}
-
 // UpdateWinSize called when window size is changed.
 func (r *Render) UpdateWinSize(ws *WinSize) {
+	r.outputLock.Lock()
+	defer r.outputLock.Unlock()
+
 	r.termHeight = Row(ws.Row)
 	r.termWidth = Column(ws.Col)
-	return
 }
 
 func dbg(m string, args ...interface{}) {
@@ -178,10 +170,6 @@ func (r *Render) render(buf *Buffer, compMgr *CompletionManager) {
 	// move to beginning of the current prompt
 	r.promptHome(Coord{r.previousCursor.X, r.previousCursor.Y + Row(added)})
 
-	// calculate future cursor position after prefix & line is printed
-	// TODO: this requires that 'contPfx' has fixed length
-	editPoint := doc.CursorDisplayCoordWithPrefix(Column(r.termWidth), r.getPrefix)
-
 	// prepare area
 	h := Row(lcount + 1 + int(compMgr.MaxVisibleChoices()))
 	if h > r.termHeight || completionMargin > r.termWidth {
@@ -197,7 +185,10 @@ func (r *Render) render(buf *Buffer, compMgr *CompletionManager) {
 
 	// render the complete prompt; prefix and editor content
 	r.out.EraseDown()
-	r.renderPrompt(doc, false)
+	r.renderPrompt(doc, false, false)
+
+	// calculate "working" cursor position after prefix & line is printed
+	editPoint := doc.CursorDisplayCoordWithPrefix(Column(r.termWidth), r.getPrefix)
 
 	// position the cursor at the edit point after the rendering
 	r.out.RestoreCursor()
@@ -234,11 +225,11 @@ func (r *Render) render(buf *Buffer, compMgr *CompletionManager) {
 	}
 
 	r.previousCursor = editPoint
-	r.previousLineCount = lcount
+	r.previousLineCount = 1 //lcount
 }
 
 // BreakLine to break line.
-func (r *Render) BreakLine(buf *Buffer) {
+func (r *Render) BreakLine(buf *Buffer, cancelled bool) {
 	r.outputLock.Lock()
 	defer r.outputLock.Unlock()
 
@@ -247,7 +238,7 @@ func (r *Render) BreakLine(buf *Buffer) {
 	editPoint := doc.CursorDisplayCoordWithPrefix(r.termWidth, r.getPrefix)
 	r.promptHome(editPoint)
 	r.out.EraseDown()
-	r.renderPrompt(doc, true)
+	r.renderPrompt(doc, true, cancelled)
 	debug.AssertNoError(r.out.Flush())
 
 	r.previousCursor = Coord{}
@@ -257,6 +248,7 @@ func (r *Render) BreakLine(buf *Buffer) {
 func (r *Render) OutputAsync(buf *Buffer, compMgr *CompletionManager, format string, a ...interface{}) {
 	go func() {
 		r.outputLock.Lock()
+		buf.RLock()
 
 		r.out.SaveCursor()
 
@@ -279,31 +271,56 @@ func (r *Render) OutputAsync(buf *Buffer, compMgr *CompletionManager, format str
 		r.render(buf, compMgr)
 		buf.RUnlock()
 
+		buf.RUnlock()
 		r.outputLock.Unlock()
 	}()
 }
 
-const scrollbarWidth = 1
-const safetyMargin = 1
+func (r *Render) prepareArea(lines Row) {
+	for i := Row(0); i < lines; i++ {
+		r.out.ScrollDown()
+	}
+	for i := Row(0); i < lines; i++ {
+		r.out.ScrollUp()
+	}
+}
 
-func (r *Render) renderPrompt(doc *Document, breakLine bool) {
+const LF = "\n"
 
-	// TODO: syntax highlight of ducment text
-	//   porbably make something akin to the "formatted text" in prompt-toolkit
+func (r *Render) renderPrompt(doc *Document, breakLine bool, cancelled bool) {
 
-	r.out.SetColor(r.Colors.inputText, r.Colors.inputBG, false)
-	for row, line := range strings.SplitAfter(doc.Text(), "\n") {
-		r.out.SetColor(r.Colors.prefixText, r.Colors.prefixBG, false)
+	// TODO: syntax highlight of document text
+	//   probably should make something akin to the "formatted text" in prompt-toolkit
+
+	lines := doc.Lines()
+	for row, line := range lines {
+		if cancelled {
+			r.out.SetColor(BrightBlack, DefaultColor, false)
+			// TODO: if the prefix contains styling, disable that also
+		} else {
+			r.out.SetColor(r.Colors.prefixText, r.Colors.prefixBG, false)
+		}
 		r.out.WriteRawStr(r.getPrefix(doc, Row(row)))
-		r.out.SetColor(DefaultColor, DefaultColor, false)
 
+		if cancelled {
+			r.out.SetColor(BrightBlack, DefaultColor, false)
+			// TODO: if the text contains styling, disable that also
+		} else {
+			r.out.SetColor(r.Colors.inputText, r.Colors.inputBG, false)
+		}
 		r.out.WriteRawStr(line)
+		if row != len(lines)-1 {
+			r.out.WriteRawStr(LF)
+		}
 	}
 
 	if breakLine {
-		r.out.WriteRawStr("\n")
+		r.out.WriteRawStr(LF)
 	}
 }
+
+const scrollbarWidth = 1
+const safetyMargin = 1
 
 func (r *Render) renderCompletion(buf *Buffer, compMgr *CompletionManager) {
 	if compMgr.NumChoices() == 0 {
@@ -393,7 +410,7 @@ func (r *Render) getPrefix(doc *Document, row Row) string {
 	if prefix, ok := r.prefixCallback(doc, row); ok {
 		return prefix
 	}
-	if doc.CursorRow() == 0 {
+	if row == 0 {
 		return r.prefix
 	}
 	return r.continuationPrefix
@@ -445,5 +462,4 @@ func (r *Render) renderWindowTooSmall() {
 	r.out.EraseScreen()
 	r.out.SetColor(Red, White, false)
 	r.out.WriteStr("Your console window is too small...")
-	return
 }

@@ -3,6 +3,7 @@ package prompt
 import (
 	"fmt"
 	"os"
+	rdebug "runtime/debug"
 	"time"
 
 	"github.com/c-bata/go-prompt/internal/debug"
@@ -34,7 +35,6 @@ type Exec struct {
 
 // Run starts prompt.
 func (p *Prompt) Run() (exitCode int) {
-	defer debug.Teardown()
 	debug.Log("start prompt")
 	p.setUp()
 
@@ -63,7 +63,7 @@ func (p *Prompt) Run() (exitCode int) {
 		case cs := <-bufCh:
 			if shouldExit, exec := p.feed(cs); shouldExit {
 				fmt.Fprintln(os.Stderr, "EXIT")
-				p.renderer.BreakLine(p.buf)
+				p.renderer.BreakLine(p.buf, true)
 				stopReadBufCh <- struct{}{}
 				stopHandleSignalCh <- struct{}{}
 				return
@@ -100,7 +100,7 @@ func (p *Prompt) Run() (exitCode int) {
 			p.renderer.UpdateWinSize(w)
 			p.renderer.Render(p.buf, p.completion)
 		case code := <-exitCh:
-			p.renderer.BreakLine(p.buf)
+			p.renderer.BreakLine(p.buf, true)
 			p.tearDown()
 			return code
 		default:

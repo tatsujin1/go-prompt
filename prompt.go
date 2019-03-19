@@ -317,7 +317,7 @@ func (p *Prompt) Input() string {
 		select {
 		case b := <-bufCh:
 			if shouldExit, e := p.feed(b); shouldExit {
-				p.renderer.BreakLine(p.buf)
+				p.renderer.BreakLine(p.buf, true)
 				return ""
 			} else if e != nil {
 				// Stop goroutine to run readBuffer function

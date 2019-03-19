@@ -28,15 +28,15 @@ const (
 
 var commonKeyBindings = map[KeyCode]KeyBindFunc{
 	// Go to the End of the line
-	End: func(e *Event) { end_of_line(e.Buffer()) },
+	KeyEnd: end_of_line,
 	// Go to the beginning of the line
-	Home: func(e *Event) { beginning_of_line(e.Buffer()) },
+	KeyHome: beginning_of_line,
 	// Delete character under/at the cursor
-	Delete: func(e *Event) { delete_char(e.Buffer()) },
+	KeyDelete: delete_char,
 	// Backspace: delete character before the cursor
-	Backspace: func(e *Event) { backward_delete_char(e.Buffer()) },
+	KeyBackspace: backward_delete_char,
 	// Right arrow: Forward one character
-	Right: func(e *Event) { forward_char(e.Buffer()) },
+	KeyRight: forward_char,
 	// Left arrow: Backward one character
-	Left: func(e *Event) { backward_char(e.Buffer()) },
+	KeyLeft: backward_char,
 }

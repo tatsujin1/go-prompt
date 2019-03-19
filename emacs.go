@@ -35,11 +35,11 @@ Editing
 * [ ] Ctrl + t   Swap the last two characters before the cursor.
 * [ ] Alt + t    Swap the word before the cursor with the word on/after the cursor.
 
-* [ ] Ctrl + y   Paste (yank) the last thing to be cut.
+* [x] Ctrl + y   Paste (yank) the last thing to be cut.
 * [ ] Ctrl + _   Undo.
 
-* [*] Ctrl + Del Delete word after cursor
-* [*] Ctrl + BS  Delete word before cursor
+* [x] Ctrl + Del Delete word after cursor
+* [x] Ctrl + BS  Delete word before cursor
 * [x] Alt + BS   Delete word before cursor
 * [x] Alt + Del  Delete word before cursor
 * [x] Alt + f    Move cursor to beginning of current/next word.
@@ -54,51 +54,51 @@ Editing
 
 var emacsKeyBindings = map[KeyCode]KeyBindFunc{
 	// Go to the End of the line
-	Control | E: func(e *Event) { end_of_line(e.Buffer()) },
+	KeyControl | KeyE: end_of_line,
 	// Go to the beginning of the line
-	Control | A: func(e *Event) { beginning_of_line(e.Buffer()) },
+	KeyControl | KeyA: beginning_of_line,
 	// Cut from cursor to the end of the Line
-	Control | K: func(e *Event) { kill_line(e.Buffer()) },
+	KeyControl | KeyK: kill_line,
 	// Cut from cursor to the beginning of the line
-	Control | U: func(e *Event) { backward_kill_line(e.Buffer()) },
+	KeyControl | KeyU: backward_kill_line,
 	// Delete character under the cursor
-	Control | D: func(e *Event) {
-		if len(e.Buffer().Text()) > 0 {
-			delete_char(e.Buffer())
-		} else {
-			// pressing C-d on an empty edit means EOF
+	KeyControl | KeyD: func(e *Event) {
+		if e.Buffer().IsEmpty() {
+			// pressing C-d in an empty edit means EOF
 			e.SetEOF()
+		} else {
+			delete_char(e)
 		}
 	},
 	// Clear the Screen, similar to the clear command
-	Control | L: func(*Event) {
+	KeyControl | KeyL: func(*Event) {
 		// TODO: clear_screen(e.Buffer())
 		consoleWriter.EraseScreen()
 		consoleWriter.CursorGoTo(0, 0)
 		debug.AssertNoError(consoleWriter.Flush())
 	},
-	Control | H:     func(e *Event) { backward_delete_char(e.Buffer()) },
-	Control | F:     func(e *Event) { forward_char(e.Buffer()) },
-	Control | B:     func(e *Event) { backward_char(e.Buffer()) },
-	Control | W:     func(e *Event) { backward_kill_word(e.Buffer()) },
-	Control | Y:     func(e *Event) { yank(e.Buffer()) },
-	Alt | F:         func(e *Event) { forward_word(e.Buffer()) },
-	Alt | B:         func(e *Event) { backward_word(e.Buffer()) },
-	Alt | Backspace: func(e *Event) { backward_kill_word(e.Buffer()) },
-	Alt | Delete:    func(e *Event) { backward_kill_word(e.Buffer()) },
-	Alt | D:         func(e *Event) { kill_word(e.Buffer()) },
-	//Alt | W:             func(e *Event) { kill_ring_save(e.Buffer()) },
-	Control | Delete:    func(e *Event) { kill_word(e.Buffer()) },
-	Control | Backspace: func(e *Event) { backward_kill_word(e.Buffer()) },
-	Control | Left:      func(e *Event) { backward_word(e.Buffer()) },
-	Control | Right:     func(e *Event) { forward_word(e.Buffer()) },
-	/*Alt | C: func(e *Event) {
+	KeyControl | KeyH:     backward_delete_char,
+	KeyControl | KeyF:     forward_char,
+	KeyControl | KeyB:     backward_char,
+	KeyControl | KeyW:     backward_kill_word,
+	KeyControl | KeyY:     yank,
+	KeyAlt | KeyF:         forward_word,
+	KeyAlt | KeyB:         backward_word,
+	KeyAlt | KeyBackspace: backward_kill_word,
+	KeyAlt | KeyDelete:    backward_kill_word,
+	KeyAlt | KeyD:         kill_word,
+	//KeyAlt | KeyW:             kill_ring_save,
+	KeyControl | KeyDelete:    kill_word,
+	KeyControl | KeyBackspace: backward_kill_word,
+	KeyControl | KeyLeft:      backward_word,
+	KeyControl | KeyRight:     forward_word,
+	/*KeyAlt | KeyC: func(e *Event) {
 		fmt.Fprintln(os.Stderr, "M-c")
 	},
-	Alt | U: func(e *Event) {
+	KeyAlt | KeyU: func(e *Event) {
 		fmt.Fprintln(os.Stderr, "M-u")
 	},
-	Alt | L: func(e *Event) {
+	KeyAlt | KeyL: func(e *Event) {
 		fmt.Fprintln(os.Stderr, "M-l")
 	},*/
 }

@@ -15,23 +15,23 @@ func completer(in prompt.Document) []prompt.Choice {
 		{"let'smakethiscomplicated", "不必要で過度に長い説明文は、「普通の」幅の端末ウィンドウに収まるものよりも幻想的に無関係であり、確実に適切に処理される必要がある問題を引き起こすでしょう。"},
 		{"second", "abc"},
 		{"third", "def"},
-		//{"fourth", "aaa"},
-		//{"five", "bbb"},
-		//{"six", "ccc"},
-		//{"seven", "ddd"},
-		//{"eight", "eee"},
-		//{"nine", "fff"},
-		//{"ten", "ggg"},
-		//{"eleven", "hhh"},
-		//{"twelve", "iii"},
-		//{"thirteen", "j"},
-		//{"fourteen", "kkk"},
-		//{"fifteen", "lll"},
-		//{"sixteen", "mmm"},
-		//{"seventeen", "nnn"},
-		//{"eighteen", "ooo"},
-		//{"nineteen", "ppp"},
-		//{"twenty", "qqq"},
+		{"fourth", "aaa"},
+		{"five", "bbb"},
+		{"six", "ccc"},
+		{"seven", "ddd"},
+		{"eight", "eee"},
+		{"nine", "fff"},
+		{"ten", "ggg"},
+		{"eleven", "hhh"},
+		{"twelve", "iii"},
+		{"thirteen", "j"},
+		{"fourteen", "kkk"},
+		{"fifteen", "lll"},
+		{"sixteen", "mmm"},
+		{"seventeen", "nnn"},
+		{"eighteen", "ooo"},
+		{"nineteen", "ppp"},
+		{"twenty", "qqq"},
 	}
 	return prompt.FilterHasPrefix(s, in.GetWordBeforeCursor(), true)
 }
@@ -62,7 +62,7 @@ func (e *ActonEditor) outdent(b *prompt.Buffer) {
 	b.DeleteBeforeCursor(prompt.Offset(len(e.indent_str)))
 }
 
-func (e *ActonEditor) on_end_line(ev *prompt.Event) {
+func (e *ActonEditor) on_enter(ev *prompt.Event) {
 	// decide whether to insert a new-line or end the edit.
 
 	buf := ev.Buffer()
@@ -142,7 +142,7 @@ func main() {
 			}
 			return
 		}),
-		prompt.OptionBindKey(prompt.KeyBind{prompt.Enter, e.on_end_line}),
+		prompt.OptionBindKey(prompt.KeyBind{prompt.KeyEnter, e.on_enter}),
 		prompt.OptionDescriptionBGColor(prompt.NewRGB(40, 25, 50)),
 		prompt.OptionDescriptionTextColor(prompt.NewRGB(120, 120, 40)),
 	)

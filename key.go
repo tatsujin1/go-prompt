@@ -23,36 +23,36 @@ const (
 	Ignore
 
 	// Matches any key.
-	Any
+	KeyAny
 
-	Escape
+	KeyEscape
 
-	A
-	B
-	C
-	D
-	E
-	F
-	G
-	H
-	I
-	J
-	K
-	L
-	M
-	N
-	O
-	P
-	Q
-	R
-	S
-	T
-	U
-	V
-	W
-	X
-	Y
-	Z
+	KeyA
+	KeyB
+	KeyC
+	KeyD
+	KeyE
+	KeyF
+	KeyG
+	KeyH
+	KeyI
+	KeyJ
+	KeyK
+	KeyL
+	KeyM
+	KeyN
+	KeyO
+	KeyP
+	KeyQ
+	KeyR
+	KeyS
+	KeyT
+	KeyU
+	KeyV
+	KeyW
+	KeyX
+	KeyY
+	KeyZ
 
 	// must prefix these with 'Key' :(
 	Key1
@@ -66,40 +66,40 @@ const (
 	Key9
 	Key0
 
-	Backtick
-	Circumflex
-	Underscore
-	Minus
-	Equals
-	Backspace
-	SquareOpen
-	SquareClose
-	SingleQuote
-	Backslash
-	LessThan
-	Space
-	Comma
-	Point
-	Slash
+	KeyBacktick
+	KeyCircumflex
+	KeyUnderscore
+	KeyMinus
+	KeyEquals
+	KeyBackspace
+	KeySquareOpen
+	KeySquareClose
+	KeySingleQuote
+	KeyBackslash
+	KeyLessThan
+	KeySpace
+	KeyComma
+	KeyPoint
+	KeySlash
 
-	Up
-	Down
-	Right
-	Left
+	KeyUp
+	KeyDown
+	KeyRight
+	KeyLeft
 
-	Home
-	End
-	Delete
-	ShiftDelete
-	ControlDelete
-	PageUp
-	PageDown
-	BackTab
-	Insert
+	KeyHome
+	KeyEnd
+	KeyDelete
+	KeyShiftDelete
+	KeyControlDelete
+	KeyPageUp
+	KeyPageDown
+	KeyBackTab
+	KeyInsert
 
 	// Aliases.
-	Tab
-	Enter
+	KeyTab
+	KeyEnter
 	// Actually Enter equals ControlM, not ControlJ,
 	// However, in prompt_toolkit, we made the mistake of translating
 	// \r into \n during the input, so everyone is now handling the
@@ -109,83 +109,83 @@ const (
 	// because that's future compatible, and will still work when we
 	// stop replacing \r by \n.
 
-	F1
-	F2
-	F3
-	F4
-	F5
-	F6
-	F7
-	F8
-	F9
-	F10
-	F11
-	F12
-	F13
-	F14
-	F15
-	F16
-	F17
-	F18
-	F19
-	F20
-	F21
-	F22
-	F23
-	F24
+	KeyF1
+	KeyF2
+	KeyF3
+	KeyF4
+	KeyF5
+	KeyF6
+	KeyF7
+	KeyF8
+	KeyF9
+	KeyF10
+	KeyF11
+	KeyF12
+	KeyF13
+	KeyF14
+	KeyF15
+	KeyF16
+	KeyF17
+	KeyF18
+	KeyF19
+	KeyF20
+	KeyF21
+	KeyF22
+	KeyF23
+	KeyF24
 
-	// Special
+	// Key modifiers, must be last (before the back-compat defs)
+	KeyShift   = 0x10000
+	KeyControl = 0x20000
+	KeyAlt     = 0x40000
+
+	// Special (not actual keys)
 	ReportCursorPosition
 	Vt100MouseEvent
 	WindowsMouseEvent
 	BracketedPaste
 
-	// Key modifiers, must be last (before the back-compat defs)
-	Shift   = 0x10000
-	Control = 0x20000
-	Alt     = 0x40000
-
 	// Constants for backwards compatibility:
 
-	ControlA = Control | A
-	ControlB = Control | B
-	ControlC = Control | C
-	ControlD = Control | D
-	ControlE = Control | E
-	ControlF = Control | F
-	ControlG = Control | G
-	ControlH = Control | H
-	ControlI = Control | I
-	ControlJ = Control | J
-	ControlK = Control | K
-	ControlL = Control | L
-	ControlM = Control | M
-	ControlN = Control | N
-	ControlO = Control | O
-	ControlP = Control | P
-	ControlQ = Control | Q
-	ControlR = Control | R
-	ControlS = Control | S
-	ControlT = Control | T
-	ControlU = Control | U
-	ControlV = Control | V
-	ControlW = Control | W
-	ControlX = Control | X
-	ControlY = Control | Y
-	ControlZ = Control | Z
+	ControlA = KeyControl | KeyA
+	ControlB = KeyControl | KeyB
+	ControlC = KeyControl | KeyC
+	ControlD = KeyControl | KeyD
+	ControlE = KeyControl | KeyE
+	ControlF = KeyControl | KeyF
+	ControlG = KeyControl | KeyG
+	ControlH = KeyControl | KeyH
+	ControlI = KeyControl | KeyI
+	ControlJ = KeyControl | KeyJ
+	ControlK = KeyControl | KeyK
+	ControlL = KeyControl | KeyL
+	ControlM = KeyControl | KeyM
+	ControlN = KeyControl | KeyN
+	ControlO = KeyControl | KeyO
+	ControlP = KeyControl | KeyP
+	ControlQ = KeyControl | KeyQ
+	ControlR = KeyControl | KeyR
+	ControlS = KeyControl | KeyS
+	ControlT = KeyControl | KeyT
+	ControlU = KeyControl | KeyU
+	ControlV = KeyControl | KeyV
+	ControlW = KeyControl | KeyW
+	ControlX = KeyControl | KeyX
+	ControlY = KeyControl | KeyY
+	ControlZ = KeyControl | KeyZ
 
-	ControlSpace       = Control | Space
-	ControlBackslash   = Control | Backslash
-	ControlSquareClose = Control | SquareClose
-	ControlCircumflex  = Control | Circumflex
-	ControlUnderscore  = Control | Underscore
-	ControlLeft        = Control | Left
-	ControlRight       = Control | Right
-	ControlUp          = Control | Up
-	ControlDown        = Control | Down
+	ControlSpace       = KeyControl | KeySpace
+	ControlBackslash   = KeyControl | KeyBackslash
+	ControlSquareClose = KeyControl | KeySquareClose
+	ControlCircumflex  = KeyControl | KeyCircumflex
+	ControlUnderscore  = KeyControl | KeyUnderscore
+	ControlLeft        = KeyControl | KeyLeft
+	ControlRight       = KeyControl | KeyRight
+	ControlUp          = KeyControl | KeyUp
+	ControlDown        = KeyControl | KeyDown
 
-	ShiftLeft  = Shift | Left
-	ShiftUp    = Shift | Up
-	ShiftDown  = Shift | Down
-	ShiftRight = Shift | Right
+	ShiftLeft  = KeyShift | KeyLeft
+	ShiftUp    = KeyShift | KeyUp
+	ShiftDown  = KeyShift | KeyDown
+	ShiftRight = KeyShift | KeyRight
 )

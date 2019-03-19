@@ -131,7 +131,7 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 		shouldExit = true
 		return
 	} else if p.buf.flags.endEdit {
-		key = Enter
+		key = KeyEnter
 	} else if tkey := p.buf.flags.translatedKey; tkey != Undefined {
 		if tkey == Ignore {
 			return
@@ -140,8 +140,8 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 	}
 
 	switch key {
-	case Enter, ControlJ, ControlM:
-		p.renderer.BreakLine(p.buf)
+	case KeyEnter, KeyControl | KeyJ, KeyControl | KeyM:
+		p.renderer.BreakLine(p.buf, false)
 
 		exec = &Exec{input: p.buf.Text()}
 
@@ -151,11 +151,11 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 		if len(exec.input) > 0 {
 			p.history.Add(exec.input)
 		}
-	case ControlC:
-		p.renderer.BreakLine(p.buf)
+	case KeyControl | KeyC:
+		p.renderer.BreakLine(p.buf, true)
 		p.buf = NewBuffer()
 		p.history.ClearModified()
-	case Up, ControlP:
+	case KeyUp, KeyControl | KeyP:
 		if !completing { // Don't use p.completion.Completing() because it takes double operation when switch to selected=-1.
 			// if current edit is multi-line (and we're not on the first line), go up one line
 			doc := p.buf.Document()
@@ -165,7 +165,7 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 				p.buf = p.history.Previous(p.buf)
 			}
 		}
-	case Down, ControlN:
+	case KeyDown, KeyControl | KeyN:
 		if !completing { // Don't use p.completion.Completing() because it takes double operation when switch to selected=-1.
 			// if current edit is multi-line (and we're not on the last line), go down one line
 			doc := p.buf.Document()
@@ -192,20 +192,20 @@ func (p *Prompt) feed(cs ControlSequence) (shouldExit bool, exec *Exec) {
 
 func (p *Prompt) handleCompletionKeyBinding(key KeyCode, completing bool) KeyCode {
 	switch key {
-	case Down:
+	case KeyDown:
 		if completing { // only if already completing
 			p.completion.Next()
 		}
-	case Tab, ControlI: // next choice, or start completing
+	case KeyTab, KeyControl | KeyI: // next choice, or start completing
 		if !p.completion.asYouType {
 			p.completion.FindCompletions(*p.buf.Document())
 		}
 		p.completion.Next()
-	case Up:
+	case KeyUp:
 		if completing { // only if already completing
 			p.completion.Previous()
 		}
-	case BackTab: // previous choice, or start completing
+	case KeyBackTab: // previous choice, or start completing
 		p.completion.Previous()
 	default:
 		if s, ok := p.completion.Selected(); ok {
@@ -216,7 +216,7 @@ func (p *Prompt) handleCompletionKeyBinding(key KeyCode, completing bool) KeyCod
 			p.buf.InsertText(s.Text, false, true)
 
 			// if completion was accepted using Enter, that key shouldn't be handled when we return
-			if key == Enter {
+			if key == KeyEnter {
 				key = Ignore
 			}
 		}

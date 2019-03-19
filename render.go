@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/c-bata/go-prompt/internal/debug"
+	"github.com/tatsujin/go-prompt/internal/debug"
 	runewidth "github.com/mattn/go-runewidth"
 )
 

@@ -28,7 +28,7 @@ type Render struct {
 	previousLineCount int
 
 	Colors             RenderColors
-	TrueColorSupported bool
+	trueColorSupported bool
 
 	outputLock *sync.Mutex
 }
@@ -86,14 +86,14 @@ func NewRender(prefix string, w ConsoleWriter) *Render {
 	// https://gist.github.com/XVilka/8346728#detection
 	cterm := os.Getenv("COLORTERM")
 	if cterm == "truecolor" || cterm == "24bit" {
-		r.TrueColorSupported = true
+		r.trueColorSupported = true
 	}
 
 	return r
 }
 
 func (r *Render) ValidateColor(c Color) (Color, bool) {
-	if r.TrueColorSupported || !c.IsTrueColor() {
+	if r.trueColorSupported || !c.IsTrueColor() {
 		return c, true
 	}
 	// TODO: make fallback color?

@@ -2,6 +2,7 @@ package prompt
 
 import (
 	"strings"
+	"unicode"
 
 	runewidth "github.com/mattn/go-runewidth"
 
@@ -39,6 +40,10 @@ func NewDocument(text string, cpos Index) *Document {
 
 func (d *Document) Text() string {
 	return string(d.text)
+}
+
+func IsWordChar(r rune) bool {
+	return unicode.IsLetter(r) || unicode.IsDigit(r)
 }
 
 // CursorTextColumn returns the column at which the cursor would be if the text was rendered in a terminal (with infinite width).

@@ -198,12 +198,30 @@ func (b *Buffer) CursorLeft(count Offset) {
 	b.preferredColumn = b.document().CursorColumnIndex()
 }
 
+// CursorBackward move to left, might go to previous line.
+func (b *Buffer) CursorBackward(count Offset) {
+	b.textLock.RLock()
+	defer b.textLock.RUnlock()
+
+	b.cursor += Index(b.document().GetCursorBackwardOffset(count))
+	b.preferredColumn = b.document().CursorColumnIndex()
+}
+
 // CursorRight move to right on the current line.
 func (b *Buffer) CursorRight(count Offset) {
 	b.textLock.RLock()
 	defer b.textLock.RUnlock()
 
 	b.cursor += Index(b.document().GetCursorRightOffset(count))
+	b.preferredColumn = b.document().CursorColumnIndex()
+}
+
+// CursorForward move to right, might go to next line.
+func (b *Buffer) CursorForward(count Offset) {
+	b.textLock.RLock()
+	defer b.textLock.RUnlock()
+
+	b.cursor += Index(b.document().GetCursorForwardOffset(count))
 	b.preferredColumn = b.document().CursorColumnIndex()
 }
 

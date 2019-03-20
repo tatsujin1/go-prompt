@@ -182,10 +182,8 @@ func (d *Document) FindStartOfCurrentWord() Index {
 	before := d.textBeforeCursor()
 
 	if idx := runes.LastIndexRune(before, ' '); idx == -1 {
-		//fmt.Fprintf(os.Stderr, "%q start: %d\n", string(before), idx)
 		return 0
 	} else {
-		//fmt.Fprintf(os.Stderr, "%q start: %d\n", string(before), idx)
 		return Index(idx + 1)
 	}
 }
@@ -300,6 +298,9 @@ func (d *Document) FindEndOfCurrentWordUntilSeparatorIgnoreNextToCursor(sep stri
 	}
 }
 
+var LF = '\n'
+var whiteSpace = []rune{' ', '\t', LF}
+var LFsize Offset = 1
 // CurrentLineBeforeCursor returns the text from the start of the line until the cursor.
 func (d *Document) CurrentLineBeforeCursor() string {
 	before := d.TextBeforeCursor()
@@ -328,8 +329,6 @@ func (d *Document) CurrentLine() string {
 	// TODO: is this faster?
 	return string(d.lines()[d.CursorRow()])
 }
-
-var LFsize = Offset(len([]rune("\n")))
 
 // Array with byte indexes to the start of all the lines.
 func (d *Document) lineStartIndexes() []Index {
@@ -388,7 +387,7 @@ func (d *Document) CursorColumnIndex() (col Index) {
 	return d.cursor - index
 }
 
-// GetCursorLeftOffset returns the relative position for moving the cursor left.
+// GetCursorLeftOffset returns the relative position for moving the cursor left on the current line.
 func (d *Document) GetCursorLeftOffset(off Offset) Offset {
 	if off < 0 {
 		return d.GetCursorRightOffset(-off)
@@ -496,18 +495,29 @@ func (d *Document) TranslateRowColToIndex(row Row, column Index) (index Index) {
 	return index
 }
 
-// CursorOnLastLine returns true when we are at the last line.
+// CursorOnLastLine returns true when the cursor is on the last line.
 func (d *Document) CursorOnLastLine() bool {
 	return d.CursorRow() == Row(d.LineCount()-1)
 }
 
+// CursorAtEndOfLine returns true when the cursor is at the end of the current line.
 func (d *Document) CursorAtEndOfLine() bool {
 	return len(d.CurrentLineAfterCursor()) == 0
 }
 
-// GetEndOfLineColumn returns relative character offset to the end of the current line.
+// GetBeginningOfLineOffset returns relative character offset to the end of the current line.
+func (d *Document) GetBeginningOfLineOffset() Offset {
+	return Offset(len([]rune(d.CurrentLineBeforeCursor())))
+}
+
+// GetEndOfLineOffset returns relative character offset to the end of the current line.
 func (d *Document) GetEndOfLineOffset() Offset {
 	return Offset(len([]rune(d.CurrentLineAfterCursor())))
+}
+
+// GetEndOfTextOffset returns relative character offset to the end of the current line.
+func (d *Document) GetEndOfTextOffset() Offset {
+	return Offset(len(d.text) - d.cursor)
 }
 
 func (d *Document) leadingWhitespaceInCurrentLine() (margin string) {

@@ -201,6 +201,6 @@ var KeySequences = map[ControlSequence]KeyCode{
 	"\x1bz": KeyAlt | KeyZ,
 
 	"\x1b\x08":  KeyAlt | KeyBackspace,
-	"\x1b\x13":  KeyAlt | KeyEnter,
+	"\x1b\x0d":  KeyAlt | KeyEnter,
 	"\x1b[3;3~": KeyAlt | KeyDelete,
 }

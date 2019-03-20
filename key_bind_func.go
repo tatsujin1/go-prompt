@@ -1,10 +1,5 @@
 package prompt
 
-import (
-	"fmt"
-	"os"
-)
-
 var clipboard string
 
 // end_of_line Go to the End of the line
@@ -16,8 +11,8 @@ func end_of_line(e *Event) {
 	if end_offset > 0 {
 		buf.CursorRight(end_offset)
 	} else if len(doc.TextAfterCursor()) > 0 {
-		buf.CursorDown(1)                                            // to next line
-		buf.CursorRight(Offset(buf.Document().GetEndOfLineOffset())) // and then to the end of that line (must create new Document)
+		buf.CursorDown(1) // to next line
+		end_of_line(e)    // and then to the end of that line (must create new Document)
 	}
 }
 
@@ -26,12 +21,11 @@ func beginning_of_line(e *Event) {
 	buf := e.Buffer()
 	doc := buf.Document()
 	col := doc.CursorColumnIndex()
-	fmt.Fprintf(os.Stderr, "beginning_of_line: col: %d\n", col)
 	if col > 0 {
 		buf.CursorLeft(Offset(col))
 	} else if doc.CursorRow() > 0 {
-		buf.CursorUp(1)                                            // to previous line
-		buf.CursorLeft(Offset(buf.Document().CursorColumnIndex())) // and then to the beginning of that line (must create new Document)
+		buf.CursorUp(1)      // to previous line
+		beginning_of_line(e) // and then to the beginning of that line (must create new Document)
 	}
 }
 
@@ -57,33 +51,56 @@ func backward_delete_char(e *Event) {
 // forward_char Forward one character
 func forward_char(e *Event) {
 	buf := e.Buffer()
-	buf.CursorRight(1)
+	doc := buf.Document()
+
+	// if cursor is at the end of the line (and there is a following line),
+	//   move cursor to the beginning of the following line
+
+	if !doc.CursorAtEndOfLine() {
+		buf.CursorRight(1)
+	} else if doc.CursorRow() < Row(doc.LineCount()-1) {
+		buf.CursorDown(1)
+		buf.CursorLeft(doc.GetBeginningOfLineOffset())
+	}
 }
 
 // backward_char Backward one character
 func backward_char(e *Event) {
 	buf := e.Buffer()
-	buf.CursorLeft(1)
-}
-
-// forward_word Forward one word
-func forward_word(e *Event) {
-	buf := e.Buffer()
-	// TODO: if cursor is at the end of the line (and there is a following line),
-	//   move cursor to the beginning of the following line and call again
-
-	buf.CursorRight(buf.Document().FindEndOfCurrentWordWithSpace())
-}
-
-// backward_word Backward one word
-func backward_word(e *Event) {
-	buf := e.Buffer()
-	// TODO: if cursor is at the beginning of the line (and there is a preceeding line),
-	//   move cursor to the end of the preceeding line and call again
 	doc := buf.Document()
 
-	wstart := doc.FindStartOfCurrentWordWithSpace()
-	buf.CursorLeft(Offset(len([]rune(doc.TextBeforeCursor())) - wstart))
+	// if cursor is at the beginning of the line (and there is a preceeding line),
+	//   move cursor to the end of the preceeding line
+
+	if len(doc.CurrentLineBeforeCursor()) > 0 {
+		buf.CursorLeft(1)
+	} else if doc.CursorRow() > 0 {
+		buf.CursorUp(1)
+		if !buf.Document().CursorAtEndOfLine() { // must create new Document
+			end_of_line(e)
+		}
+	}
+}
+
+// forward_word Forward one word (across lines).
+func forward_word(e *Event) {
+	buf := e.Buffer()
+	doc := buf.Document()
+
+	wstart := doc.FindStartOfNextWord()
+	if wstart == 0 { // nothing found at all -> go to end of text
+		wstart = doc.GetEndOfTextOffset()
+	}
+	buf.CursorForward(wstart)
+}
+
+// backward_word Backward one word (across lines).
+func backward_word(e *Event) {
+	buf := e.Buffer()
+	doc := buf.Document()
+
+	wstart := doc.FindStartOfPreviousWord()
+	buf.CursorBackward(Offset(doc.CursorIndex() - wstart))
 }
 
 // delete and copy word at cursor

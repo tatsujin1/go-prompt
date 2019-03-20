@@ -176,6 +176,44 @@ func (d *Document) GetWordAfterCursorUntilSeparatorIgnoreNextToCursor(sep string
 	return string(d.textAfterCursor()[:end])
 }
 
+// FindStartOfPreviousWord returns the index to the start of the word before the cursor.
+func (d *Document) FindStartOfPreviousWord() Index {
+	// case 1:  "   word  word"
+	//          out-^  ^-in
+	// case 2:  "   word  word"
+	//          out-^    ^-in
+	// case 3:  "   word  word"
+	//          out-^     ^-in
+
+	if d.cursor == 0 {
+		return 0
+	}
+	before := d.textBeforeCursor()
+
+	var wstart Index = len(before) - 1
+	if IsWordChar(before[wstart]) { // cursor is at a word
+		wsend := runes.LastIndexNotFunc(before, IsWordChar) // find the start of the word
+		if wsend == -1 {
+			return 0
+		}
+		if wstart+1 < d.cursor { // start of the word is before the cursor
+			return wstart + 1
+		}
+	}
+	// find last of word character
+	wend := runes.LastIndexFunc(before[:wstart], IsWordChar)
+	if wend == -1 {
+		return 0
+	}
+
+	// find last non-word character (preceeding 'wend')
+	wstart = runes.LastIndexNotFunc(before[:wend], IsWordChar)
+	if wstart == -1 {
+		return 0
+	}
+	return wstart + 1
+}
+
 // FindStartOfCurrentWord returns an index to the start of the word
 // the cursor is currently at. Return 0 if nothing was found.
 func (d *Document) FindStartOfCurrentWord() Index {
@@ -301,6 +339,53 @@ func (d *Document) FindEndOfCurrentWordUntilSeparatorIgnoreNextToCursor(sep stri
 var LF = '\n'
 var whiteSpace = []rune{' ', '\t', LF}
 var LFsize Offset = 1
+
+// FindStartOfNextWord returns the offset from the cursor to the start of the next word (might not be on the current line),
+//    return 0 if no next word exists.
+func (d *Document) FindStartOfNextWord() Offset {
+
+	after := d.textAfterCursor()
+
+	// case 1:  "   word  word"
+	//        in-^  ^-out   (offset: 2)
+	// case 2:  "   word  word"
+	//           in-^     ^-out  (offset: 6)
+	// case 3:  "   word"
+	//           in-^   ^-out  (offset: 4)
+
+	if len(after) == 0 { // end of text
+		return 0
+	}
+	var end Offset
+	if IsWordChar(after[0]) { // cursor is at a word
+		end = Offset(runes.IndexNotFunc(after, IsWordChar))
+		if end == -1 {
+			return 0
+		}
+	}
+	nonspace := runes.IndexFunc(after[end:], IsWordChar)
+	if nonspace == -1 {
+		return 0
+	}
+	return end + Offset(nonspace)
+}
+
+// FindWordOffset returns the offset from the cursor to the nearest/next word.
+//  returns -1 if no word found, 0 if already at a word.
+func (d *Document) FindWordOffset() Offset {
+	after := d.textAfterCursor()
+
+	if after[0] != ' ' && after[0] != '\t' {
+		return 0 // already at a word
+	}
+
+	nonspace := runes.IndexFunc(after, IsWordChar)
+	if nonspace == -1 {
+		return -1
+	}
+	return Offset(nonspace)
+}
+
 // CurrentLineBeforeCursor returns the text from the start of the line until the cursor.
 func (d *Document) CurrentLineBeforeCursor() string {
 	before := d.TextBeforeCursor()

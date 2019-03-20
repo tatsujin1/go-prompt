@@ -214,6 +214,48 @@ func ExampleDocument_GetWordAfterCursorUntilSeparatorIgnoreNextToCursor() {
 	// ,i am c-bata
 }
 
+func TestDocument_IsWordChar(t *testing.T) {
+	tests := []struct {
+		r        rune
+		expected bool
+	}{
+		{
+			r:        ' ',
+			expected: false,
+		},
+		{
+			r:        '/',
+			expected: false,
+		},
+		{
+			r:        '-',
+			expected: false,
+		},
+		{
+			r:        '_',
+			expected: false,
+		},
+		{
+			r:        'a',
+			expected: true,
+		},
+		{
+			r:        '2',
+			expected: true,
+		},
+		{
+			r:        'こ',
+			expected: true,
+		},
+	}
+	for idx, tt := range tests {
+		ac := IsWordChar(tt.r)
+		if ac != tt.expected {
+			t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
+		}
+	}
+}
+
 func TestDocument_CursorColumnIndex(t *testing.T) {
 	tests := []struct {
 		document *Document
@@ -246,10 +288,10 @@ func TestDocument_CursorColumnIndex(t *testing.T) {
 		},
 	}
 
-	for _, p := range tests {
-		ac := p.document.CursorColumnIndex()
-		if ac != p.expected {
-			t.Errorf("Expected %#v, got %#v", p.expected, ac)
+	for idx, tt := range tests {
+		ac := tt.document.CursorColumnIndex()
+		if ac != tt.expected {
+			t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 		}
 	}
 }
@@ -304,10 +346,10 @@ func TestDocument_CursorDisplayCoord(t *testing.T) {
 		},
 	}
 
-	for idx, p := range tests {
-		ac := p.document.CursorDisplayCoord(80)
-		if ac != p.expected {
-			t.Errorf("[%d] Expected %+v, got %+v", idx, p.expected, ac)
+	for idx, tt := range tests {
+		ac := tt.document.CursorDisplayCoord(80)
+		if ac != tt.expected {
+			t.Errorf("[%d] Expected %+v, got %+v", idx, tt.expected, ac)
 		}
 	}
 }
@@ -376,13 +418,13 @@ func TestDocument_CursorDisplayCoordWithPrefix(t *testing.T) {
 		},
 	}
 
-	for idx, p := range tests {
+	for idx, tt := range tests {
 		pfx_f := func(d *Document, _ Row) string {
-			return p.prefix[d.CursorRow()]
+			return tt.prefix[d.CursorRow()]
 		}
-		ac := p.document.CursorDisplayCoordWithPrefix(80, pfx_f)
-		if ac != p.expected {
-			t.Errorf("[%d] Expected %+v, got %+v", idx, p.expected, ac)
+		ac := tt.document.CursorDisplayCoordWithPrefix(80, pfx_f)
+		if ac != tt.expected {
+			t.Errorf("[%d] Expected %+v, got %+v", idx, tt.expected, ac)
 		}
 	}
 }
@@ -419,10 +461,10 @@ func TestDocument_GetCharFromCursor(t *testing.T) {
 		},
 	}
 
-	for i, p := range tests {
-		ac := p.document.GetCharFromCursor(p.offset)
-		if ac != p.expected {
-			t.Errorf("[%d] Expected %q (%d), got %q (%d)", i, string(p.expected), p.expected, string(ac), ac)
+	for idx, tt := range tests {
+		ac := tt.document.GetCharFromCursor(tt.offset)
+		if ac != tt.expected {
+			t.Errorf("[%d] Expected %q (%d), got %q (%d)", idx, string(tt.expected), tt.expected, string(ac), ac)
 		}
 	}
 }
@@ -454,10 +496,10 @@ func TestDocument_TextBeforeCursor(t *testing.T) {
 			expected: "Добрый\nде",
 		},
 	}
-	for i, p := range tests {
-		ac := p.document.TextBeforeCursor()
-		if ac != p.expected {
-			t.Errorf("[%d] Expected %s, got %s", i, p.expected, ac)
+	for idx, tt := range tests {
+		ac := tt.document.TextBeforeCursor()
+		if ac != tt.expected {
+			t.Errorf("[%d] Expected %s, got %s", idx, tt.expected, ac)
 		}
 	}
 }
@@ -497,10 +539,10 @@ func TestDocument_TextAfterCursor(t *testing.T) {
 		},
 	}
 
-	for i, p := range tests {
-		ac := p.document.TextAfterCursor()
-		if ac != p.expected {
-			t.Errorf("[%d] Expected %#v, got %#v", i, p.expected, ac)
+	for idx, tt := range tests {
+		ac := tt.document.TextAfterCursor()
+		if ac != tt.expected {
+			t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 		}
 	}
 }
@@ -564,20 +606,20 @@ func TestDocument_GetWordBeforeCursor(t *testing.T) {
 		},
 	}
 
-	for i, p := range tests {
-		if p.sep == "" {
-			ac := p.document.GetWordBeforeCursor()
-			if ac != p.expected {
-				t.Errorf("[%d] Expected %#v, got %#v", i, p.expected, ac)
+	for idx, tt := range tests {
+		if tt.sep == "" {
+			ac := tt.document.GetWordBeforeCursor()
+			if ac != tt.expected {
+				t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
-			ac = p.document.GetWordBeforeCursorUntilSeparator("")
-			if ac != p.expected {
-				t.Errorf("[%d] Expected %#v, got %#v", i, p.expected, ac)
+			ac = tt.document.GetWordBeforeCursorUntilSeparator("")
+			if ac != tt.expected {
+				t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
 		} else {
-			ac := p.document.GetWordBeforeCursorUntilSeparator(p.sep)
-			if ac != p.expected {
-				t.Errorf("[%d] Expected %#v, got %#v", i, p.expected, ac)
+			ac := tt.document.GetWordBeforeCursorUntilSeparator(tt.sep)
+			if ac != tt.expected {
+				t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
 		}
 	}
@@ -635,21 +677,113 @@ func TestDocument_GetWordBeforeCursorWithSpace(t *testing.T) {
 		},
 	}
 
-	for _, p := range tests {
-		if p.sep == "" {
-			ac := p.document.GetWordBeforeCursorWithSpace()
-			if ac != p.expected {
-				t.Errorf("Expected %#v, got %#v", p.expected, ac)
+	for idx, tt := range tests {
+		if tt.sep == "" {
+			ac := tt.document.GetWordBeforeCursorWithSpace()
+			if ac != tt.expected {
+				t.Errorf("[%d/1] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
-			ac = p.document.GetWordBeforeCursorUntilSeparatorIgnoreNextToCursor("")
-			if ac != p.expected {
-				t.Errorf("Expected %#v, got %#v", p.expected, ac)
+			ac = tt.document.GetWordBeforeCursorUntilSeparatorIgnoreNextToCursor("")
+			if ac != tt.expected {
+				t.Errorf("[%d/2] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
 		} else {
-			ac := p.document.GetWordBeforeCursorUntilSeparatorIgnoreNextToCursor(p.sep)
-			if ac != p.expected {
-				t.Errorf("Expected %#v, got %#v", p.expected, ac)
+			ac := tt.document.GetWordBeforeCursorUntilSeparatorIgnoreNextToCursor(tt.sep)
+			if ac != tt.expected {
+				t.Errorf("[%d/s] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
+		}
+	}
+}
+
+func TestDocument_FindStartOfPreviousWord(t *testing.T) {
+	tests := []struct {
+		document *Document
+		expected Index
+		sep      string
+	}{
+		{
+			document: NewDocument(
+				"apple bana",
+				len("appl"),
+			),
+			expected: 0,
+		},
+		{
+			document: NewDocument(
+				"apple bana",
+				len("apple"),
+			),
+			expected: 0,
+		},
+		{
+			document: NewDocument(
+				"apple bana",
+				len("apple "),
+			),
+			expected: 0,
+		},
+		// case 1:  "   word  word"
+		//          out-^  ^-in
+		{
+			document: NewDocument(
+				" apple bana",
+				len(" appl"),
+			),
+			expected: 1,
+		},
+		// case 2:  "   word  word"
+		//          out-^    ^-in
+		{
+			document: NewDocument(
+				" apple bana",
+				len(" apple"),
+			),
+			expected: 1,
+		},
+		// case 3:  "   word  word"
+		//          out-^     ^-in
+		{
+			document: NewDocument(
+				" apple bana",
+				len(" apple "),
+			),
+			expected: 1,
+		},
+		{
+			document: NewDocument(
+				"apple\nbana",
+				len("apple\n"),
+			),
+			expected: 0,
+		},
+		{
+			document: NewDocument(
+				" apple\nbana",
+				len(" apple\n"),
+			),
+			expected: 1,
+		},
+		{
+			document: NewDocument(
+				"apple \n\nbana",
+				len("apple \n\n"),
+			),
+			expected: 0,
+		},
+		{
+			document: NewDocument(
+				" apple \n\nbana",
+				len("apple \n\n"),
+			),
+			expected: 1,
+		},
+	}
+
+	for idx, tt := range tests {
+		ac := tt.document.FindStartOfPreviousWord()
+		if ac != tt.expected {
+			t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 		}
 	}
 }
@@ -684,6 +818,13 @@ func TestDocument_FindStartOfCurrentWord(t *testing.T) {
 		},
 		{
 			document: NewDocument(
+				"line 1\nline 2",
+				len("line 1\nli"),
+			),
+			expected: Index(len("line ")),
+		},
+		{
+			document: NewDocument(
 				"apply -f ./file/foo.json",
 				len("apply -f ./"),
 			),
@@ -706,20 +847,20 @@ func TestDocument_FindStartOfCurrentWord(t *testing.T) {
 		},
 	}
 
-	for idx, p := range tests {
-		if p.sep == "" {
-			ac := p.document.FindStartOfCurrentWord()
-			if ac != p.expected {
-				t.Errorf("[%d/1] Expected %#v, got %#v", idx, p.expected, ac)
+	for idx, tt := range tests {
+		if tt.sep == "" {
+			ac := tt.document.FindStartOfCurrentWord()
+			if ac != tt.expected {
+				t.Errorf("[%d/1] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
-			ac = p.document.FindStartOfCurrentWordUntilSeparator("")
-			if ac != p.expected {
-				t.Errorf("[%d/2] Expected %#v, got %#v", idx, p.expected, ac)
+			ac = tt.document.FindStartOfCurrentWordUntilSeparator("")
+			if ac != tt.expected {
+				t.Errorf("[%d/2] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
 		} else {
-			ac := p.document.FindStartOfCurrentWordUntilSeparator(p.sep)
-			if ac != p.expected {
-				t.Errorf("[%d/s] Expected %#v, got %#v", idx, p.expected, ac)
+			ac := tt.document.FindStartOfCurrentWordUntilSeparator(tt.sep)
+			if ac != tt.expected {
+				t.Errorf("[%d/s] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
 		}
 	}
@@ -777,20 +918,20 @@ func TestDocument_FindStartOfCurrentWordWithSpace(t *testing.T) {
 		},
 	}
 
-	for idx, p := range tests {
-		if p.sep == "" {
-			ac := p.document.FindStartOfCurrentWordWithSpace()
-			if ac != p.expected {
-				t.Errorf("[%d/1] Expected %#v, got %#v", idx, p.expected, ac)
+	for idx, tt := range tests {
+		if tt.sep == "" {
+			ac := tt.document.FindStartOfCurrentWordWithSpace()
+			if ac != tt.expected {
+				t.Errorf("[%d/1] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
-			ac = p.document.FindStartOfCurrentWordUntilSeparatorIgnoreNextToCursor("")
-			if ac != p.expected {
-				t.Errorf("[%d/2] Expected %#v, got %#v", idx, p.expected, ac)
+			ac = tt.document.FindStartOfCurrentWordUntilSeparatorIgnoreNextToCursor("")
+			if ac != tt.expected {
+				t.Errorf("[%d/2] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
 		} else {
-			ac := p.document.FindStartOfCurrentWordUntilSeparatorIgnoreNextToCursor(p.sep)
-			if ac != p.expected {
-				t.Errorf("[%d/s] Expected %#v, got %#v", idx, p.expected, ac)
+			ac := tt.document.FindStartOfCurrentWordUntilSeparatorIgnoreNextToCursor(tt.sep)
+			if ac != tt.expected {
+				t.Errorf("[%d/s] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
 		}
 	}
@@ -862,20 +1003,20 @@ func TestDocument_GetWordAfterCursor(t *testing.T) {
 		},
 	}
 
-	for idx, p := range tests {
-		if p.sep == "" {
-			ac := p.document.GetWordAfterCursor()
-			if ac != p.expected {
-				t.Errorf("[%d] Expected %#v, got %#v", idx, p.expected, ac)
+	for idx, tt := range tests {
+		if tt.sep == "" {
+			ac := tt.document.GetWordAfterCursor()
+			if ac != tt.expected {
+				t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
-			ac = p.document.GetWordAfterCursorUntilSeparator("")
-			if ac != p.expected {
-				t.Errorf("[%d] Expected %#v, got %#v", idx, p.expected, ac)
+			ac = tt.document.GetWordAfterCursorUntilSeparator("")
+			if ac != tt.expected {
+				t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
 		} else {
-			ac := p.document.GetWordAfterCursorUntilSeparator(p.sep)
-			if ac != p.expected {
-				t.Errorf("[%d] Expected %#v, got %#v", idx, p.expected, ac)
+			ac := tt.document.GetWordAfterCursorUntilSeparator(tt.sep)
+			if ac != tt.expected {
+				t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
 		}
 	}
@@ -955,20 +1096,20 @@ func TestDocument_GetWordAfterCursorWithSpace(t *testing.T) {
 		},
 	}
 
-	for idx, p := range tests {
-		if p.sep == "" {
-			ac := p.document.GetWordAfterCursorWithSpace()
-			if ac != p.expected {
-				t.Errorf("[%d] Expected %#v, got %#v", idx, p.expected, ac)
+	for idx, tt := range tests {
+		if tt.sep == "" {
+			ac := tt.document.GetWordAfterCursorWithSpace()
+			if ac != tt.expected {
+				t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
-			ac = p.document.GetWordAfterCursorUntilSeparatorIgnoreNextToCursor("")
-			if ac != p.expected {
-				t.Errorf("[%d] Expected %#v, got %#v", idx, p.expected, ac)
+			ac = tt.document.GetWordAfterCursorUntilSeparatorIgnoreNextToCursor("")
+			if ac != tt.expected {
+				t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
 		} else {
-			ac := p.document.GetWordAfterCursorUntilSeparatorIgnoreNextToCursor(p.sep)
-			if ac != p.expected {
-				t.Errorf("[%d] Expected %#v, got %#v", idx, p.expected, ac)
+			ac := tt.document.GetWordAfterCursorUntilSeparatorIgnoreNextToCursor(tt.sep)
+			if ac != tt.expected {
+				t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
 		}
 	}
@@ -984,6 +1125,13 @@ func TestDocument_FindEndOfCurrentWord(t *testing.T) {
 			document: NewDocument(
 				"apple bana",
 				len("apple bana"),
+			),
+			expected: 0,
+		},
+		{
+			document: NewDocument(
+				"   ",
+				len(" "),
 			),
 			expected: 0,
 		},
@@ -1055,20 +1203,20 @@ func TestDocument_FindEndOfCurrentWord(t *testing.T) {
 		},
 	}
 
-	for idx, p := range tests {
-		if p.sep == "" {
-			ac := p.document.FindEndOfCurrentWord()
-			if ac != p.expected {
-				t.Errorf("[%d] Expected %#v, got %#v", idx, p.expected, ac)
+	for idx, tt := range tests {
+		if tt.sep == "" {
+			ac := tt.document.FindEndOfCurrentWord()
+			if ac != tt.expected {
+				t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
-			ac = p.document.FindEndOfCurrentWordUntilSeparator("")
-			if ac != p.expected {
-				t.Errorf("[%d] Expected %#v, got %#v", idx, p.expected, ac)
+			ac = tt.document.FindEndOfCurrentWordUntilSeparator("")
+			if ac != tt.expected {
+				t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
 		} else {
-			ac := p.document.FindEndOfCurrentWordUntilSeparator(p.sep)
-			if ac != p.expected {
-				t.Errorf("[%d] Expected %#v, got %#v", idx, p.expected, ac)
+			ac := tt.document.FindEndOfCurrentWordUntilSeparator(tt.sep)
+			if ac != tt.expected {
+				t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
 		}
 	}
@@ -1147,21 +1295,162 @@ func TestDocument_FindEndOfCurrentWordWithSpace(t *testing.T) {
 		},
 	}
 
-	for idx, p := range tests {
-		if p.sep == "" {
-			ac := p.document.FindEndOfCurrentWordWithSpace()
-			if ac != p.expected {
-				t.Errorf("[%d] Expected %#v, got %#v", idx, p.expected, ac)
+	for idx, tt := range tests {
+		if tt.sep == "" {
+			ac := tt.document.FindEndOfCurrentWordWithSpace()
+			if ac != tt.expected {
+				t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
-			ac = p.document.FindEndOfCurrentWordUntilSeparatorIgnoreNextToCursor("")
-			if ac != p.expected {
-				t.Errorf("[%d] Expected %#v, got %#v", idx, p.expected, ac)
+			ac = tt.document.FindEndOfCurrentWordUntilSeparatorIgnoreNextToCursor("")
+			if ac != tt.expected {
+				t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
 		} else {
-			ac := p.document.FindEndOfCurrentWordUntilSeparatorIgnoreNextToCursor(p.sep)
-			if ac != p.expected {
-				t.Errorf("[%d] Expected %#v, got %#v", idx, p.expected, ac)
+			ac := tt.document.FindEndOfCurrentWordUntilSeparatorIgnoreNextToCursor(tt.sep)
+			if ac != tt.expected {
+				t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 			}
+		}
+	}
+}
+
+func TestDocument_FindStartOfNextWord(t *testing.T) {
+	tests := []struct {
+		document *Document
+		expected Offset
+	}{
+		{
+			document: NewDocument(
+				"",
+				0,
+			),
+			expected: 0,
+		},
+		{
+			document: NewDocument(
+				"apple bana",
+				0,
+			),
+			expected: Offset(len("apple ")),
+		},
+		{
+			document: NewDocument(
+				"apple bana",
+				len("apple "),
+			),
+			expected: 0,
+		},
+		{
+			document: NewDocument(
+				"apple bana",
+				len("apple"),
+			),
+			expected: Offset(len(" ")),
+		},
+		{
+			document: NewDocument(
+				"apple bana",
+				len("ap"),
+			),
+			expected: Offset(len("ple ")),
+		},
+		{
+			document: NewDocument(
+				"  bana",
+				0,
+			),
+			expected: Offset(len("  ")),
+		},
+		{
+			document: NewDocument(
+				"   ",
+				0,
+			),
+			expected: 0,
+		},
+		{
+			document: NewDocument(
+				"apple bana",
+				len("ap"),
+			),
+			expected: Offset(len("ple ")),
+		},
+		{
+			document: NewDocument(
+				"apple   ",
+				len("ap"),
+			),
+			expected: 0,
+		},
+		{
+			document: NewDocument(
+				"apple\nbana",
+				len("ap"),
+			),
+			expected: Offset(len("ple\n")),
+		},
+		{
+			document: NewDocument(
+				"apple\nbana",
+				0,
+			),
+			expected: Offset(len("apple\n")),
+		},
+		{
+			document: NewDocument(
+				"apple\n  bana",
+				0,
+			),
+			expected: Offset(len("apple\n  ")),
+		},
+		{
+			document: NewDocument(
+				"\n\n  ",
+				0,
+			),
+			expected: 0,
+		},
+		{
+			document: NewDocument(
+				"\n\n  a",
+				0,
+			),
+			expected: Offset(len("\n\n  ")),
+		},
+		{
+			document: NewDocument(
+				"dd\n\n  a",
+				0,
+			),
+			expected: Offset(len("dd\n\n  ")),
+		},
+		{
+			document: NewDocument(
+				"あいうえお かきくけこ",
+				len([]rune("あいうえお ")),
+			),
+			expected: 0,
+		},
+		{
+			document: NewDocument(
+				"あいうえお かきくけこ",
+				len([]rune("あいうえ")),
+			),
+			expected: Offset(len([]rune("お "))),
+		},
+		{
+			document: NewDocument(
+				"Добрый день",
+				len([]rune("Добрый")),
+			),
+			expected: Offset(len(" ")),
+		},
+	}
+
+	for idx, tt := range tests {
+		ac := tt.document.FindStartOfNextWord()
+		if ac != tt.expected {
+			t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 		}
 	}
 }
@@ -1218,10 +1507,10 @@ func TestDocument_CursorOnLastLine(t *testing.T) {
 		},
 	}
 
-	for idx, p := range tests {
-		actual := p.document.CursorOnLastLine()
-		if actual != p.expected {
-			t.Errorf("[%d] Expected %#v, got %#v", idx, p.expected, actual)
+	for idx, tt := range tests {
+		actual := tt.document.CursorOnLastLine()
+		if actual != tt.expected {
+			t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, actual)
 		}
 	}
 }
@@ -1254,10 +1543,10 @@ func TestDocument_CursorAtEndOfLine(t *testing.T) {
 		},
 	}
 
-	for idx, p := range tests {
-		actual := p.document.CursorAtEndOfLine()
-		if actual != p.expected {
-			t.Errorf("[%d] Expected %#v, got %#v", idx, p.expected, actual)
+	for idx, tt := range tests {
+		actual := tt.document.CursorAtEndOfLine()
+		if actual != tt.expected {
+			t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, actual)
 		}
 	}
 }
@@ -1275,10 +1564,10 @@ func TestDocument_CurrentLine(t *testing.T) {
 			expected: "line 2",
 		},
 	}
-	for idx, p := range tests {
-		ac := p.document.CurrentLine()
-		if ac != p.expected {
-			t.Errorf("[%d] Expected %#v, got %#v", idx, p.expected, ac)
+	for idx, tt := range tests {
+		ac := tt.document.CurrentLine()
+		if ac != tt.expected {
+			t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 		}
 	}
 }

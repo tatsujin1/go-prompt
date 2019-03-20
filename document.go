@@ -399,12 +399,36 @@ func (d *Document) GetCursorLeftOffset(off Offset) Offset {
 	return -cursorCol
 }
 
-// GetCursorRightOffset returns relative position for moving the cursor right.
+// GetCursorBackwardOffset returns relative position for moving the cursor left (across lines).
+func (d *Document) GetCursorBackwardOffset(off Offset) Offset {
+	if off < 0 {
+		return d.GetCursorForwardOffset(-off)
+	}
+	before := d.textBeforeCursor()
+	if Offset(len(before)) > off {
+		return -off
+	}
+	return Offset(-len(before))
+}
+
+// GetCursorRightOffset returns relative position for moving the cursor right on the current line.
 func (d *Document) GetCursorRightOffset(off Offset) Offset {
 	if off < 0 {
 		return d.GetCursorLeftOffset(-off)
 	}
 	after := []rune(d.CurrentLineAfterCursor())
+	if Offset(len(after)) > off {
+		return off
+	}
+	return Offset(len(after))
+}
+
+// GetCursorForwardOffset returns relative position for moving the cursor right (across lines).
+func (d *Document) GetCursorForwardOffset(off Offset) Offset {
+	if off < 0 {
+		return d.GetCursorBackwardOffset(-off)
+	}
+	after := d.textAfterCursor()
 	if Offset(len(after)) > off {
 		return off
 	}

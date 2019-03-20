@@ -26,6 +26,16 @@ func FindKey(cs ControlSequence) KeyCode {
 	return Undefined
 }
 
+// HasControlModifier returns whether the given key code has the Control modifier.
+func HasControlModifier(k KeyCode) bool {
+	return k&KeyControl > 0
+}
+
+// HasAltModifier returns whether the given key code has the Alt modifier.
+func HasAltModifier(k KeyCode) bool {
+	return k&KeyAlt > 0
+}
+
 // KeySequences holds mappings of control sequence to a logical key code.
 var KeySequences = map[ControlSequence]KeyCode{
 	"\x1b": KeyEscape,

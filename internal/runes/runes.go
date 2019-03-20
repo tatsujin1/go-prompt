@@ -1,5 +1,7 @@
 package runes
 
+type TestFunc func(r rune) bool
+
 // HasPrefix tests whether 's' begins with 'prefix'.
 func HasPrefix(s, prefix []rune) bool {
 	return len(s) >= len(prefix) && Compare(s[:len(prefix)], prefix) == 0
@@ -55,7 +57,7 @@ head:
 	return -1
 }
 
-// IndexAny returns the index of the first occurrence of any in 'any'.
+// IndexAny returns the index of the first occurrence in 's' that is in 'any'.
 func IndexAny(s, any []rune) int {
 	if len(any) == 0 {
 		return -1
@@ -70,7 +72,7 @@ func IndexAny(s, any []rune) int {
 	return -1
 }
 
-// IndexNotAny returns the index of the first occurrence of something in 's' not in 'any'.
+// IndexNotAny returns the index of the first occurrence in 's' that is not in 'any'.
 func IndexNotAny(s, any []rune) int {
 	if len(any) == 0 {
 		return -1
@@ -90,7 +92,7 @@ next_rune:
 	return -1
 }
 
-// IndexRune returns the index to the first occurrence of 'r' in 's'.
+// IndexRune returns the index to the first occurrence in 's' that equals 'r'.
 func IndexRune(s []rune, r rune) int {
 	for idx, c := range s {
 		if c == r {
@@ -100,10 +102,30 @@ func IndexRune(s []rune, r rune) int {
 	return -1
 }
 
-// IndexNotRune returns the index to the first occurrance of something in 's' not 'r'.
+// IndexNotRune returns the index to the first occurrance in 's' that does not equal 'r'.
 func IndexNotRune(s []rune, r rune) int {
 	for idx, c := range s {
 		if c != r {
+			return idx
+		}
+	}
+	return -1
+}
+
+// IndexFunc returns the index to the first occurrence in 's' where 'f' returns true.
+func IndexFunc(s []rune, f TestFunc) int {
+	for idx, c := range s {
+		if f(c) {
+			return idx
+		}
+	}
+	return -1
+}
+
+// IndexNotFunc returns the index to the first occurrence in 's' where 'f' returns false.
+func IndexNotFunc(s []rune, f TestFunc) int {
+	for idx, c := range s {
+		if !f(c) {
 			return idx
 		}
 	}
@@ -168,29 +190,7 @@ func Compare(a, b []rune) int {
 	return 0
 }
 
-// LastIndexRune returns the index to the last occurrence of 'r' in 's'.
-func LastIndexRune(s []rune, r rune) int {
-	for idx := len(s) - 1; idx >= 0; idx-- {
-		if s[idx] == r {
-			return idx
-		}
-	}
-
-	return -1
-}
-
-// LastIndexNotRune returns the index to the last occurrence of something not 'r' in 's'.
-func LastIndexNotRune(s []rune, r rune) int {
-	for idx := len(s) - 1; idx >= 0; idx-- {
-		if s[idx] != r {
-			return idx
-		}
-	}
-
-	return -1
-}
-
-// LastIndexAny returns the index of the last occurrence of any in 'any'.
+// LastIndexAny returns the index of the last occurrence in 's' that is in 'any'.
 func LastIndexAny(s []rune, any []rune) int {
 	if len(any) == 0 {
 		return -1
@@ -206,7 +206,7 @@ func LastIndexAny(s []rune, any []rune) int {
 	return -1
 }
 
-// LastIndexNotAny returns the index of the last occurrence of something in 's' not in 'any'.
+// LastIndexNotAny returns the index of the last occurrence in 's' that is not in 'any'.
 func LastIndexNotAny(s []rune, any []rune) int {
 	if len(any) == 0 {
 		return -1
@@ -223,6 +223,46 @@ next_rune:
 		}
 		//fmt.Fprintf(os.Stderr, "  ==> %d\n", idx)
 		return idx
+	}
+	return -1
+}
+
+// LastIndexRune returns the index to the last occurrence in 's' that equals 'r'.
+func LastIndexRune(s []rune, r rune) int {
+	for idx := len(s) - 1; idx >= 0; idx-- {
+		if s[idx] == r {
+			return idx
+		}
+	}
+	return -1
+}
+
+// LastIndexNotRune returns the index to the last occurrence in 's' that does not equal 'r'.
+func LastIndexNotRune(s []rune, r rune) int {
+	for idx := len(s) - 1; idx >= 0; idx-- {
+		if s[idx] != r {
+			return idx
+		}
+	}
+	return -1
+}
+
+// LastIndexFunc returns the index to the last occurrence in 's' where 'f' returns true.
+func LastIndexFunc(s []rune, f TestFunc) int {
+	for idx := len(s) - 1; idx >= 0; idx-- {
+		if f(s[idx]) {
+			return idx
+		}
+	}
+	return -1
+}
+
+// LastIndexNotFunc returns the index to the last occurrence in 's' where 'f' returns false.
+func LastIndexNotFunc(s []rune, f TestFunc) int {
+	for idx := len(s) - 1; idx >= 0; idx-- {
+		if !f(s[idx]) {
+			return idx
+		}
 	}
 	return -1
 }

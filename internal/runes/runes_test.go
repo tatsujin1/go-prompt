@@ -357,6 +357,76 @@ func Test_IndexNotRune(t *testing.T) {
 	}
 }
 
+func Test_IndexFunc(t *testing.T) {
+	tests := []struct {
+		s        []rune
+		f        TestFunc
+		expected int
+	}{
+		{
+			s:        []rune("something nothing"),
+			f:        func(r rune) bool { return r == 'i' },
+			expected: len([]rune("someth")),
+		},
+		{
+			s:        []rune("something nothing"),
+			f:        func(r rune) bool { return r == 'n' },
+			expected: len([]rune("somethi")),
+		},
+		{
+			s:        []rune("こんにちは"),
+			f:        func(r rune) bool { return r == 'ち' },
+			expected: len([]rune("こんに")),
+		},
+		{
+			s:        []rune("こんにちは"),
+			f:        func(r rune) bool { return r == '칹' },
+			expected: -1,
+		},
+	}
+	for idx, tt := range tests {
+		ac := IndexFunc(tt.s, tt.f)
+		if ac != tt.expected {
+			t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
+		}
+	}
+}
+
+func Test_IndexNotFunc(t *testing.T) {
+	tests := []struct {
+		s        []rune
+		f        TestFunc
+		expected int
+	}{
+		{
+			s:        []rune("ssssssssXsssXss"),
+			f:        func(r rune) bool { return r == 's' },
+			expected: len([]rune("ssssssss")),
+		},
+		{
+			s:        []rune("ssssssssss"),
+			f:        func(r rune) bool { return r == 's' },
+			expected: -1,
+		},
+		{
+			s:        []rune(""),
+			f:        func(r rune) bool { return r == 'X' },
+			expected: -1,
+		},
+		{
+			s:        []rune("こここん"),
+			f:        func(r rune) bool { return r == 'こ' },
+			expected: len([]rune("こここ")),
+		},
+	}
+	for idx, tt := range tests {
+		ac := IndexNotFunc(tt.s, tt.f)
+		if ac != tt.expected {
+			t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
+		}
+	}
+}
+
 func Test_LastIndex(t *testing.T) {
 	tests := []struct {
 		s        []rune
@@ -501,6 +571,76 @@ func Test_LastIndexNotRune(t *testing.T) {
 	}
 	for idx, tt := range tests {
 		ac := LastIndexNotRune(tt.s, tt.r)
+		if ac != tt.expected {
+			t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
+		}
+	}
+}
+
+func Test_LastIndexFunc(t *testing.T) {
+	tests := []struct {
+		s        []rune
+		f        TestFunc
+		expected int
+	}{
+		{
+			s:        []rune("something nothing"),
+			f:        func(r rune) bool { return r == 'i' },
+			expected: len([]rune("something noth")),
+		},
+		{
+			s:        []rune("something nothing"),
+			f:        func(r rune) bool { return r == 'n' },
+			expected: len([]rune("something nothi")),
+		},
+		{
+			s:        []rune("こんにちは"),
+			f:        func(r rune) bool { return r == 'ち' },
+			expected: len([]rune("こんに")),
+		},
+		{
+			s:        []rune("こんにちは"),
+			f:        func(r rune) bool { return r == '칹' },
+			expected: -1,
+		},
+	}
+	for idx, tt := range tests {
+		ac := LastIndexFunc(tt.s, tt.f)
+		if ac != tt.expected {
+			t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
+		}
+	}
+}
+
+func Test_LastIndexNotFunc(t *testing.T) {
+	tests := []struct {
+		s        []rune
+		f        TestFunc
+		expected int
+	}{
+		{
+			s:        []rune("ssssssssXssssXss"),
+			f:        func(r rune) bool { return r == 's' },
+			expected: len([]rune("ssssssssXssss")),
+		},
+		{
+			s:        []rune("ssssssssss"),
+			f:        func(r rune) bool { return r == 's' },
+			expected: -1,
+		},
+		{
+			s:        []rune(""),
+			f:        func(r rune) bool { return r == 'X' },
+			expected: -1,
+		},
+		{
+			s:        []rune("こここんこんこ"),
+			f:        func(r rune) bool { return r == 'こ' },
+			expected: len([]rune("こここんこ")),
+		},
+	}
+	for idx, tt := range tests {
+		ac := LastIndexNotFunc(tt.s, tt.f)
 		if ac != tt.expected {
 			t.Errorf("[%d] Expected %#v, got %#v", idx, tt.expected, ac)
 		}

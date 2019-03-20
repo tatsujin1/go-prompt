@@ -6,8 +6,8 @@ import (
 
 	runewidth "github.com/mattn/go-runewidth"
 
-	"github.com/c-bata/go-prompt/internal/bisect"
-	"github.com/c-bata/go-prompt/internal/runes"
+	"github.com/tatsujin/go-prompt/internal/bisect"
+	"github.com/tatsujin/go-prompt/internal/runes"
 )
 
 type Column int  // terminal column when rendered

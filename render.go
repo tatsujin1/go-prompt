@@ -285,7 +285,7 @@ func (r *Render) prepareArea(lines Row) {
 	}
 }
 
-const LF = "\n"
+var LFstr = "\n"
 
 func (r *Render) renderPrompt(doc *Document, breakLine bool, cancelled bool) {
 
@@ -310,12 +310,12 @@ func (r *Render) renderPrompt(doc *Document, breakLine bool, cancelled bool) {
 		}
 		r.out.WriteRawStr(line)
 		if row != len(lines)-1 {
-			r.out.WriteRawStr(LF)
+			r.out.WriteRawStr(LFstr)
 		}
 	}
 
 	if breakLine {
-		r.out.WriteRawStr(LF)
+		r.out.WriteRawStr(LFstr)
 	}
 }
 

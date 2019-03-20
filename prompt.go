@@ -53,9 +53,15 @@ func (p *Prompt) Run() (exitCode int) {
 	go p.handleSignals(exitCh, termSizeCh, stopHandleSignalCh)
 
 	defer func() {
+		if r := recover(); r != nil {
+			fmt.Fprintln(os.Stderr, r)
+			rdebug.PrintStack()
+		}
+
 		stopReadBufCh <- struct{}{}
 		stopHandleSignalCh <- struct{}{}
 		p.tearDown()
+		debug.Teardown()
 	}()
 
 	for {
